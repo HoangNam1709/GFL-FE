@@ -3,14 +3,14 @@ import type { XitecLog } from '../types';
 
 interface CardPrintFormProps { 
   data: XitecLog;
-  maTheQuet: string;
-  onMaTheQuetChange: (value: string) => void;
+  cardCode: string;
+  onCardCodeChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
-export default function CardPrintForm({ data, maTheQuet, onMaTheQuetChange, onSubmit }: CardPrintFormProps) {
+export default function CardPrintForm({ data, cardCode, onCardCodeChange, onSubmit }: CardPrintFormProps) {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onMaTheQuetChange(event.target.value);
+    onCardCodeChange(event.target.value);
   };
 
   return (
@@ -22,7 +22,7 @@ export default function CardPrintForm({ data, maTheQuet, onMaTheQuetChange, onSu
           <input
             type="text"
             placeholder="Quẹt thẻ vào đây..."
-            value={maTheQuet}
+            value={cardCode}
             onChange={handleChange}
             style={{
               width: '90%',
@@ -40,7 +40,7 @@ export default function CardPrintForm({ data, maTheQuet, onMaTheQuetChange, onSu
         <div style={{ marginTop: '20px', padding: '10px', background: '#262626', borderRadius: '6px', border: '1px dashed #555' }}>
           <p style={{ margin: '0 0 5px 0', color: '#aaa', fontSize: '12px' }}>Hệ thống sẽ tự gộp dữ liệu:</p>
           <p style={{ fontSize: '13px', margin: '2px 0' }}>
-            • Thẻ số: <span style={{ color: '#ff9900' }}>{maTheQuet || 'Chưa quẹt'}</span>
+            • Thẻ số: <span style={{ color: '#ff9900' }}>{cardCode || 'Chưa quẹt'}</span>
           </p>
           <p style={{ fontSize: '13px', margin: '2px 0' }}>
             • Sẽ đi cùng xe: <span style={{ color: '#ff9900' }}>{data.bienSoXe}</span>
