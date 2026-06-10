@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Box } from '@mui/material'; // Bỏ hẳn import Grid
+import { Card, CardContent, Typography, Box, useTheme } from '@mui/material'; // 🌟 Import useTheme
 import type { XitecLog } from '../../../types/vehicle';
 
 interface CameraInfoProps {
@@ -6,21 +6,45 @@ interface CameraInfoProps {
 }
 
 export default function CameraInfo({ data }: CameraInfoProps) {
+  const theme = useTheme(); // 🌟 Kích hoạt bộ theo dõi Theme động của hệ thống
+
   return (
-    <>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 2, 
+        width: '100%',
+        height: '100%',
+        alignItems: 'stretch' 
+      }}
+    >
       {/* CỘT 2: KHỐI ẢNH XE & BIỂN SỐ XE */}
-      {/* Dùng Box giả lập một ô lưới Grid với flex-basis 33.33% */}
       <Box
         sx={{
-          flexGrow: 1,
-          flexShrink: 0,
-          flexBasis: { xs: '100%', md: 'calc(33.33% - 16px)' }, // Tự động co giãn chia 3 cột
-          width: { xs: '100%', md: 'auto' }
+          flex: { xs: '1 1 100%', lg: '1 1 calc(50% - 8px)' },
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          height: { xs: 'auto', lg: '100%' } 
         }}
       >
-        <Card sx={{ bgcolor: '#1a1a1a', border: '1px solid #333', borderRadius: 2, height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ color: '#ff9900', fontWeight: 'bold', mb: 2 }}>
+        <Card 
+          sx={{ 
+            // 🌟 Thay đổi màu nền và màu viền động theo theme hệ thống
+            bgcolor: theme.palette.customBg.card, 
+            border: `1px solid ${theme.palette.customBg.border}`, 
+            borderRadius: 2, 
+            width: '100%', 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column' 
+          }}
+        >
+          <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            {/* Màu chữ tiêu đề ăn theo màu Primary (Cam đậm / Vàng cam) */}
+            <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
               📸 2. ẢNH XE & BIỂN SỐ LPR
             </Typography>
 
@@ -28,21 +52,23 @@ export default function CameraInfo({ data }: CameraInfoProps) {
               variant="h4"
               sx={{
                 mb: 2,
-                bgcolor: '#ffffff',
+                // Giữ nền trắng chữ đen cho biển số dễ đọc, hoặc giảm nhẹ độ chói khi ở Light mode
+                bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : '#f0f0f0',
                 color: '#000000',
                 textAlign: 'center',
                 py: 1,
                 borderRadius: 1,
                 fontWeight: 'bold',
                 letterSpacing: 2,
-                border: '2px solid #333'
+                border: `2px solid ${theme.palette.customBg.border}`
               }}
             >
               {data.licensePlate}
             </Typography>
 
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mb: 1 }}>
+            <Box sx={{ mt: 1, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              {/* Màu chữ mô tả phụ ăn theo màu text phụ của theme */}
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 1 }}>
                 Hình ảnh toàn cảnh phương tiện:
               </Typography>
               <Box
@@ -54,7 +80,8 @@ export default function CameraInfo({ data }: CameraInfoProps) {
                   height: 300,
                   objectFit: 'cover',
                   borderRadius: 1,
-                  border: '1px solid #444'
+                  border: `1px solid ${theme.palette.customBg.border}`,
+                  flexGrow: 1
                 }}
               />
             </Box>
@@ -62,37 +89,54 @@ export default function CameraInfo({ data }: CameraInfoProps) {
         </Card>
       </Box>
 
-      {/* CỘT 3: KHỐI ẢNH MẶT TÀI XẾ CHỤP TỪ CABIN CAMERA */}
+      {/* CỘT 3: KHỐI ẢNH MẶT TÀI XẾ */}
       <Box
         sx={{
-          flexGrow: 1,
-          flexShrink: 0,
-          flexBasis: { xs: '100%', md: 'calc(33.33% - 16px)' }, // Tự động co giãn chia 3 cột
-          width: { xs: '100%', md: 'auto' }
+          flex: { xs: '1 1 100%', lg: '1 1 calc(50% - 8px)' },
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          height: { xs: 'auto', lg: '100%' } 
         }}
       >
-        <Card sx={{ bgcolor: '#1a1a1a', border: '1px solid #333', borderRadius: 2, height: '100%' }}>
-          <CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" sx={{ color: '#ff9900', fontWeight: 'bold', mb: 3, textAlign: 'left' }}>
+        <Card 
+          sx={{ 
+            // 🌟 Tương tự, đổi màu nền và màu viền động theo theme
+            bgcolor: theme.palette.customBg.card, 
+            border: `1px solid ${theme.palette.customBg.border}`, 
+            borderRadius: 2, 
+            width: '100%', 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column' 
+          }}
+        >
+          <CardContent sx={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%', width: '100%', flex: 1 }}>
+            <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 3, textAlign: 'left' }}>
               👤 3. Ảnh mặt tài xế:
             </Typography>
 
-            <Box
-              component="img"
-              src={data.driverFaceImage}
-              alt="Khuôn mặt tài xế"
-              sx={{
-                width: 300,
-                height: 300,
-                objectFit: 'cover',
-                border: '3px solid #ff9900',
-                boxShadow: '0px 0px 15px rgba(255, 153, 0, 0.4)',
-                my: 1
-              }}
-            />
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Box
+                component="img"
+                src={data.driverFaceImage}
+                alt="Khuôn mặt tài xế"
+                sx={{
+                  width: '100%',
+                  maxWidth: 300,
+                  height: 300,
+                  objectFit: 'cover',
+                  // Viền của ảnh sẽ đổi theo màu Primary động
+                  border: `3px solid ${theme.palette.primary.main}`,
+                  // Chỉ bật bóng đổ (glow) khi ở chế độ Dark mode để trông ngầu hơn, Light mode thì ẩn đi cho sạch
+                  boxShadow: theme.palette.mode === 'dark' ? '0px 0px 15px rgba(255, 153, 0, 0.4)' : 'none',
+                  borderRadius: 1
+                }}
+              />
+            </Box>
           </CardContent>
         </Card>
       </Box>
-    </>
+    </Box>
   );
 }

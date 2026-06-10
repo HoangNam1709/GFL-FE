@@ -1,24 +1,35 @@
-import { Card, CardContent, Typography, Box, TextField } from '@mui/material';
+import { Card, CardContent, Typography, Box, TextField, useTheme } from '@mui/material'; // 🌟 Import useTheme
 import type { ChangeEvent } from 'react';
 import type { XitecLog } from '../../../types/vehicle';
 
 interface CccdInfoProps {
   data: XitecLog;
-  // Khai báo thêm hàm callback để báo cho trang cha biết khi dữ liệu thay đổi
   onUpdateField: (field: keyof XitecLog, value: string) => void;
 }
 
 export default function CccdInfo({ data, onUpdateField }: CccdInfoProps) {
+  const theme = useTheme(); // 🌟 Kích hoạt bộ theo dõi Theme động của hệ thống
+
   return (
-    <Card sx={{ bgcolor: '#1a1a1a', border: '1px solid #333', borderRadius: 2 }}>
-      <CardContent>
-        <Typography variant="h6" sx={{ color: '#ff9900', fontWeight: 'bold', mb: 2 }}>
-          🪪 1. DỮ LIỆU OCR CCCD (CÓ THỂ SỬA)
+    <Card 
+      sx={{ 
+        // 🌟 Đồng bộ màu nền Card và viền động theo theme
+        bgcolor: theme.palette.customBg.card, 
+        border: `1px solid ${theme.palette.customBg.border}`, 
+        borderRadius: 2, 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column' 
+      }}
+    >
+      <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
+          🪪 1. DỮ LIỆU OCR CCCD
         </Typography>
 
         {/* Ảnh chân dung quét từ CCCD */}
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Typography variant="body2" sx={{ color: '#aaa', mb: 1 }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
             Ảnh mặt trên CCCD:
           </Typography>
           <Box
@@ -30,7 +41,7 @@ export default function CccdInfo({ data, onUpdateField }: CccdInfoProps) {
               height: 250,
               borderRadius: 1,
               objectFit: 'cover',
-              border: '2px solid #ff9900',
+              border: `2px solid ${theme.palette.primary.main}`, // Viền đổi theo màu primary
             }}
           />
         </Box>
@@ -43,8 +54,20 @@ export default function CccdInfo({ data, onUpdateField }: CccdInfoProps) {
           value={data.nationalId}
           onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('nationalId', e.target.value)}
           slotProps={{
-            input: { sx: { color: '#fff', bgcolor: '#222' } },
-            inputLabel: { sx: { color: '#ff9900' } }
+            input: { 
+              sx: { 
+                // 🌟 Động hóa màu chữ và nền ô nhập
+                color: theme.palette.text.primary, 
+                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
+              } 
+            },
+            inputLabel: { 
+              sx: { 
+                color: theme.palette.primary.main,
+                // Giúp màu label khi focus không bị lỗi màu trắng ở light mode
+                '&.Mui-focused': { color: theme.palette.primary.main } 
+              } 
+            }
           }}
           sx={{ mb: 2 }}
         />
@@ -55,11 +78,21 @@ export default function CccdInfo({ data, onUpdateField }: CccdInfoProps) {
           label="Họ và Tên tài xế"
           variant="outlined"
           value={data.driverName}
-          // Khi gõ, hệ thống tự động đổi chữ thành HOA cho chuẩn nghiệp vụ quản lý
           onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('driverName', e.target.value.toUpperCase())}
           slotProps={{
-            input: { sx: { color: '#ff9900', fontWeight: 'bold', bgcolor: '#222' } },
-            inputLabel: { sx: { color: '#ff9900' } }
+            input: { 
+              sx: { 
+                color: theme.palette.primary.main, 
+                fontWeight: 'bold', 
+                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
+              } 
+            },
+            inputLabel: { 
+              sx: { 
+                color: theme.palette.primary.main,
+                '&.Mui-focused': { color: theme.palette.primary.main }
+              } 
+            }
           }}
         />
       </CardContent>

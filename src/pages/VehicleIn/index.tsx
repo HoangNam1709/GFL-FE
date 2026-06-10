@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, SyntheticEvent } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography, CircularProgress, useTheme, IconButton } from '@mui/material'; // 🌟 Import thêm useTheme
 import PrintIcon from '@mui/icons-material/Print';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import axios from 'axios';
@@ -10,6 +10,8 @@ import CccdInfo from './components/CccdInfo';
 import CameraInfo from './components/CameraInfo';
 import HistoryLog from './components/HistoryLog';
 import CustomButton from '../../components/CustomButton';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useNavigate } from 'react-router-dom';
 const API_URL = "http://127.0.0.1:8000/ocr/cccd";
 
 export default function VehicleInPage() {
@@ -18,10 +20,8 @@ export default function VehicleInPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // 1. DỪNG LUỒNG QUÉT TỰ ĐỘNG LỖI 422 
-  // Vì API nhận dạng qua POST yêu cầu truyền file trực tiếp từ client, 
-  // ta không dùng Polling chạy suông nữa mà chuyển sang cơ chế kích hoạt theo sự kiện (Event-driven).
+  const theme = useTheme(); // 🌟 Kích hoạt bộ theo dõi Theme động của hệ thống
+  const Navigate = useNavigate();
   useEffect(() => {
     console.log("Hệ thống OCR sẵn sàng tiếp nhận file ảnh từ bốt bảo vệ.");
   }, []);
@@ -36,30 +36,23 @@ export default function VehicleInPage() {
     fileInputRef.current?.click();
   };
 
-  // 2. XỬ LÝ GỬI ẢNH CCCD QUA FORMDATA VÀ NHẬN DIỆN THỦ CÔNG
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Tạo link blob hiển thị ảnh cục bộ tại phía client
     const imageUrl = URL.createObjectURL(file);
-
-    // Đóng gói file vào FormData để dập tắt lỗi 422 Unprocessable Entity từ BE
     const formData = new FormData();
-
-    // CHÚ Ý: Key truyền vào đây (ở đây là 'image') phải trùng khớp 100% với tên biến File nhận ở Backend.
     formData.append('image', file);
 
     try {
       console.log("Đang tải file ảnh lên Backend để xử lý OCR...");
-      setIsLoading(true); // Bật trạng thái loading khi bắt đầu gửi ảnh
+      setIsLoading(true);
       const response = await axios.post(API_URL, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // Kiểm tra cấu trúc đúng theo format Backend bọc: { status: "SUCCESS", data: {...} }
       if (response.data && response.data.status === "SUCCESS") {
-        const cccdApiData = response.data.data; // Bóc lấy object con nằm trong trường data
+        const cccdApiData = response.data.data;
 
         setVehicleData({
           id: cccdApiData?.id || "Không rõ",
@@ -78,21 +71,16 @@ export default function VehicleInPage() {
         console.log("Xử lý OCR dữ liệu CCCD thành công!");
       }
     } catch (error) {
-      // IN RA LỖI THỰC TẾ LÀM CODE BỊ CRASH
       console.error("❌ Lỗi thực tế xuất hiện trong khối try hoặc catch:", error);
-
       if (axios.isAxiosError(error)) {
         console.error("Chi tiết lỗi phản hồi từ mạng:", error.response?.data || error.message);
       }
-
-      // Tạm thời tắt alert này đi hoặc đổi thông báo để theo dõi log console chuẩn hơn
       alert("Hệ thống gặp lỗi xử lý dữ liệu. Hãy mở tab Console (F12) để xem chi tiết lỗi!");
     } finally {
-      // Kiểm tra an toàn trước khi reset value để tránh lỗi undefined crash code
       if (fileInputRef && fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      setIsLoading(false); // Tắt trạng thái loading sau khi hoàn thành xử lý
+      setIsLoading(false);
     }
   };
 
@@ -143,27 +131,43 @@ export default function VehicleInPage() {
   };
 
   return (
-    <Box>
+    // 🌟 Đổi Box ngoài cùng ăn theo nền tổng thể của Theme (Trắng xám nhạt <-> Đen sẫm)
+    <Box sx={{ bgcolor: theme.palette.customBg.main, minHeight: '100vh', p: { xs: 2, sm: 3 } }}>
+
       {/* CẤU TRÚC HEADER CHỨA TIÊU ĐỀ & NÚT BẤM TẢI ẢNH */}
       <Box
         sx={{
           mb: 4,
           p: 2,
-          borderBottom: '2px solid #ff9900',
+          // 🌟 Viền dưới đổi màu linh hoạt động theo cấu hình theme
+          borderBottom: `2px solid ${theme.palette.customBg.border}`,
           display: 'flex',
           flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: 2
         }}
       >
         <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-          <Typography variant="h5" sx={{ color: '#ff9900', fontWeight: 'bold' }}>
-            CỔNG VÀO: GIÁM SÁT HÌNH ẢNH REAl-TIME từ CAMERA & CCCD
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-            <CircularProgress size={14} color="warning" />
-            <Typography variant="caption" sx={{ color: '#aaa' }}>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+            {/* 🌟 NÚT QUAY LẠI MÀN HÌNH TỔNG QUÂN 6 CAM */}
+            <IconButton
+              onClick={() => Navigate("/camera-overview")}
+              sx={{ color: theme.palette.primary.main, border: `1px solid ${theme.palette.customBg.border}` }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+
+            {/* 🌟 Màu chữ tiêu đề tự động đổi (Cam công nghiệp <-> Vàng cam Real Madrid) */}
+            <Typography variant="h5" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
+              CỔNG VÀO: GIÁM SÁT HÌNH ẢNH REAl-TIME từ CAMERA & CCCD
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, ml:6 , justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+            <CircularProgress size={14} color="primary" />
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
               Hệ thống sẵn sàng nhận diện xử lý qua tệp hình ảnh...
             </Typography>
           </Box>
@@ -179,54 +183,75 @@ export default function VehicleInPage() {
           />
 
           <CustomButton
-            variant="contained"                    // Tự động ăn theo rest props
-            startIcon={<AddPhotoAlternateIcon />}  // Tự động ăn theo rest props
-            onClick={handleUploadImageClick}       // Tự động ăn theo rest props
-            isLoading={isLoading}                  // State xoay tròn đợi AI (nếu có)
+            variant="contained"
+            startIcon={<AddPhotoAlternateIcon />}
+            onClick={handleUploadImageClick}
+            isLoading={isLoading}
           >
-            Thêm CCCD                              
+            Thêm CCCD
           </CustomButton>
         </Box>
       </Box>
 
       {/* KHU VỰC HIỂN THỊ CHÍNH */}
       {!vehicleData ? (
-        <Box sx={{ textAlign: 'center', py: 12, color: '#888888' }}>
-          <Typography variant="h6">Chờ tải tệp hình ảnh hoặc tín hiệu quét CCCD từ bốt bảo vệ...</Typography>
+        // 🌟 Chữ thông báo chờ đổi màu linh hoạt tránh bị chìm nền
+        <Box sx={{ textAlign: 'center', py: { xs: 6, md: 12 }, color: theme.palette.text.secondary }}>
+          <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+            Chờ tải tệp hình ảnh hoặc tín hiệu quét CCCD từ bốt bảo vệ...
+          </Typography>
         </Box>
       ) : (
         <Box>
           <Box
             sx={{
               display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
+              flexDirection: 'row',
+              flexWrap: 'wrap',
               gap: 3,
-              alignItems: 'stretch'
+              alignItems: 'stretch',
             }}
           >
             {/* CỘT 1: Thông tin CCCD */}
-            <Box sx={{ flexGrow: 1, flexShrink: 0, flexBasis: { xs: '100%', md: 'calc(33.33% - 16px)' }, width: { xs: '100%', md: 'auto' } }}>
+            <Box
+              sx={{
+                flex: { xs: '1 1 100%', lg: '0 0 calc(33.33% - 16px)' },
+                width: '100%',
+              }}
+            >
               <CccdInfo data={vehicleData} onUpdateField={handleUpdateVehicleField} />
             </Box>
 
-            {/* CỘT 2 & CỘT 3: Các khung hình Camera */}
-            <CameraInfo data={vehicleData} />
+            {/* CỘT 2 & 3: Các khung hình Camera */}
+            <Box
+              sx={{
+                flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 16px)' },
+                width: '100%'
+              }}
+            >
+              <CameraInfo data={vehicleData} />
+            </Box>
           </Box>
 
-          {/* NÚT BẤM IN THẺ KHÁCH VÀO */}
+          {/* NÚT BẤM XÁC NHẬN IN THẺ KHÁCH VÀO */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, mb: 2 }}>
             <CustomButton
               variant="contained"
-              color="success"
               size="large"
               startIcon={<PrintIcon />}
               onClick={handlePrintCard}
               sx={{
                 fontWeight: 'bold',
                 px: 4, py: 1.8, fontSize: '16px',
-                bgcolor: '#2e7d32',
-                boxShadow: '0px 4px 20px rgba(76, 175, 80, 0.3)',
-                '&:hover': { bgcolor: '#1b5e20' }
+                // 🌟 Động hóa nút xác nhận: Light theme dùng màu xanh lá tươi, Dark theme dùng xanh lá sẫm
+                bgcolor: theme.palette.mode === 'light' ? '#4caf50' : '#2e7d32',
+                boxShadow: theme.palette.mode === 'light'
+                  ? '0px 4px 20px rgba(76, 175, 80, 0.2)'
+                  : '0px 4px 20px rgba(76, 175, 80, 0.3)',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'light' ? '#388e3c' : '#1b5e20'
+                },
+                width: { xs: '100%', sm: 'auto' }
               }}
             >
               XÁC NHẬN & IN THẺ VÀO
@@ -235,7 +260,7 @@ export default function VehicleInPage() {
         </Box>
       )}
 
-      {/* LỊCH SỬ LOG */}
+      {/* 3. LỊCH SỬ LOG */}
       <Box sx={{ mt: 2 }}>
         <HistoryLog history={printHistory} />
       </Box>

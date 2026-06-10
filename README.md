@@ -92,7 +92,7 @@ Giúp người dùng di chuyển giữa các trang hoặc các tính năng trong
 
 Hầu như dự án nào cũng cần form để thu thập dữ liệu từ người dùng.
 
-* **`Button`** : Nút bấm (có các dạng `contained` - tô đậm, `outlined` - viền, `text` - chỉ có chữ).
+* **`Button`** : Nút bấm (có các dạng variant: `contained` - tô đậm, `outlined` - viền, `text` - chỉ có chữ).
 * **`TextField`** : Ô nhập dữ liệu (Input) cực kỳ thông minh, tự động xử lý hiệu ứng kéo nhãn (`label`) lên trên khi người dùng click vào.
 * **`Select`** : Menu thả xuống (Dropdown) để chọn một hoặc nhiều lựa chọn.
 * **`Checkbox` / `Radio` / `Switch`** : Các nút tích chọn, chọn 1 trong nhiều, hoặc công tắc bật/tắt (On/Off).
@@ -101,7 +101,7 @@ Hầu như dự án nào cũng cần form để thu thập dữ liệu từ ngư
 
 Dùng để trình bày thông tin một cách trực quan, đẹp mắt.
 
-* **`Typography`** : Quản lý toàn bộ chữ nghĩa, văn bản (thay thế cho `<h1>`, `<h2>`, `<p>`, `<span>`) để đảm bảo font chữ và kích thước đồng bộ.
+* **`Typography`** : Quản lý toàn bộ chữ nghĩa, văn bản (thay thế cho `<h1>`, `<h2>`, `<p>`, `<span>`) để đảm bảo font chữ và kích thước đồng bộ.`variant` trong Typography quy định **kích thước chữ, độ dày (font-weight), và khoảng cách dòng (line-height)** theo một hệ thống phân cấp chuẩn (Typography Scale).
 * **`Table`** : Hệ thống bảng dữ liệu (Bao gồm `TableHead`, `TableBody`, `TableCell`, `TableRow`) để làm các danh sách quản lý.
 * **`List` & `ListItem`** : Danh sách dạng dòng (như danh sách các menu ở Sidebar trong code của bạn).
 * **`Card`** : Thẻ bọc nội dung (gồm `CardContent`, `CardActions`, `CardHeader`), rất hay dùng để làm danh sách sản phẩm, tin tức.
@@ -115,3 +115,19 @@ Tương tác và đưa ra phản hồi cho hành động của người dùng.
 * **`CircularProgress` / `LinearProgress`** : Biểu tượng xoay tròn hoặc thanh chạy ngang báo hiệu hệ thống đang tải dữ liệu (Loading).
 * **`Dialog`** : Hộp thoại Pop-up hiện lên giữa màn hình yêu cầu xác nhận (ví dụ: "Bạn có chắc chắn muốn xóa không?").
 * **`Snackbar` & `Alert`** : Thanh thông báo nhỏ tự động bật lên ở góc màn hình rồi ẩn đi (ví dụ: "Lưu thành công!", "Đã có lỗi xảy ra").
+
+### **Phân chia cấu trúc Responsive theo cấu hình màn hình (Breakpoints)**
+
+Hệ thống giám sát phân tách luồng hiển thị dựa trên mốc ranh giới cốt lõi là **$1200\text{px}$ (`lg` breakpoint)** để tối ưu hóa trải nghiệm trên các thiết bị từ trạm bốt bảo vệ đến thiết bị di động:
+
+* **Màn hình PC / Laptop cỡ lớn (**$\ge 1200\text{px}$** - `lg` và `xl`):**
+
+  * Toàn bộ giao diện được tổ chức trên một hàng ngang duy nhất nhằm tận dụng tối đa không gian hiển thị thời gian thực (Real-time Monitoring).
+  * **Cột 1 (Thông tin CCCD OCR):** Chiếm tỷ lệ cố định **$33.33\%$** độ rộng màn hình (`flexBasis: 'calc(33.33% - 16px)'`).
+  * **Cụm Camera (Cột 2 & 3):** Chiếm **$66.66\%$** không gian còn lại. Phía trong cụm camera, hai khối **Ảnh xe/Biển số LPR** và **Ảnh mặt tài xế** được chia đều theo tỷ lệ **$50\% - 50\%$** hàng ngang (`flexBasis: 'calc(50% - 8px)'`).
+* **Màn hình Máy tính bảng / Điện thoại / Laptop nhỏ (**$< 1200\text{px}$** - `xs`, `sm`, `md`):**
+
+  * Thuộc tính `flexDirection` chuyển từ `'row'` sang `'column'`.
+  * Tất cả 3 khối chức năng (`CccdInfo`, `Ảnh xe LPR`, `Ảnh mặt tài xế`) đồng loạt tự động giãn độ rộng ra **$100\%$** (`flexBasis: '100%'`). Các cột lúc này xếp chồng lên nhau theo chiều dọc, giúp người dùng dễ dàng cuộn giao diện mà không bị thu nhỏ hình ảnh hay chèn ép ký tự chữ.
+
+task: nghiên cứu responsive, nút đổi màu nền, layout hiển thị trang dashboard 6 màn hình cam trước khi vào màn hình thêm cccd. vẽ lại luồng bên trên, form đăng ký xe theo người , form đăng ký  người ,
