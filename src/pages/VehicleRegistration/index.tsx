@@ -30,7 +30,7 @@ const VEHICLE_TYPES = [
 
 
 
-export default function VehicleRegistrationPage() {
+export default function VehicleRegistrationPage() { 
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -93,11 +93,11 @@ export default function VehicleRegistrationPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 🌟 Nếu form không hợp lệ thì chặn ngay tại đây, không cho chạy tiếp xuống Backend
-    if (!validateForm()) return; 
 
-    setIsLoading(true); 
+    // 🌟 Nếu form không hợp lệ thì chặn ngay tại đây, không cho chạy tiếp xuống Backend
+    if (!validateForm()) return;
+
+    setIsLoading(true);
     console.log("Dữ liệu hợp lệ gửi lên Backend:", formData);
 
     setTimeout(() => {
@@ -134,8 +134,94 @@ export default function VehicleRegistrationPage() {
       {/* FORM CHÍNH */}
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
+          {/* PHÂN KHU 1: THÔNG TIN CHỦ XE */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ bgcolor: theme.palette.customBg.card, border: `1px solid ${theme.palette.customBg.border}`, borderRadius: '12px', height: '100%' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PersonIcon color="primary" /> Thông Tin Chủ Xe / Tài Xế
+                </Typography>
+                <Divider sx={{ mb: 3 }} />
 
-          {/* PHÂN KHU 1: THÔNG TIN PHƯƠNG TIỆN */}
+                <Grid container spacing={2}>
+                  <Grid size={12}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Họ và Tên Chủ Xe"
+                      placeholder="Ví dụ: NGUYỄN VĂN A"
+                      value={formData.ownerName}
+                      onChange={handleChange('ownerName')}
+
+                      // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
+                      error={Boolean(errors.ownerName)}
+                      helperText={errors.ownerName}
+
+                      slotProps={{
+                        input: {
+                          style: { textTransform: 'uppercase' },
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <PersonIcon />
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Số CCCD / Định danh"
+                      value={formData.ownerId}
+                      onChange={handleChange('ownerId')}
+
+                      // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
+                      error={Boolean(errors.ownerId)}
+                      helperText={errors.ownerId}
+
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <BadgeIcon />
+                            </InputAdornment>
+                          ),
+                        }
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Số Điện Thoại"
+                      value={formData.ownerPhone}
+                      onChange={handleChange('ownerPhone')}
+
+                      // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
+                      error={Boolean(errors.ownerPhone)}
+                      helperText={errors.ownerPhone}
+
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <PhoneIcon />
+                            </InputAdornment>
+                          ),
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+          {/* PHÂN KHU 2: THÔNG TIN PHƯƠNG TIỆN */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Card sx={{ bgcolor: theme.palette.customBg.card, border: `1px solid ${theme.palette.customBg.border}`, borderRadius: '12px', height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
@@ -145,7 +231,7 @@ export default function VehicleRegistrationPage() {
                 <Divider sx={{ mb: 3 }} />
 
                 <Grid container spacing={2}>
-                  <Grid size={{xs: 6, md: 12}}>
+                  <Grid size={{ xs: 6, md: 12 }}>
                     <TextField
                       required
                       fullWidth
@@ -153,11 +239,11 @@ export default function VehicleRegistrationPage() {
                       placeholder="Ví dụ: 29C-777.77"
                       value={formData.licensePlate}
                       onChange={handleChange('licensePlate')}
-                      
+
                       // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
                       error={Boolean(errors.licensePlate)} // Đổi sang true nếu có chuỗi lỗi
                       helperText={errors.licensePlate}      // Hiển thị nội dung lỗi bên dưới
-                      
+
                       slotProps={{
                         input: {
                           startAdornment: (
@@ -191,93 +277,7 @@ export default function VehicleRegistrationPage() {
             </Card>
           </Grid>
 
-          {/* PHÂN KHU 2: THÔNG TIN CHỦ XE */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card sx={{ bgcolor: theme.palette.customBg.card, border: `1px solid ${theme.palette.customBg.border}`, borderRadius: '12px', height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PersonIcon color="primary" /> Thông Tin Chủ Xe / Tài Xế
-                </Typography>
-                <Divider sx={{ mb: 3 }} />
 
-                <Grid container spacing={2}>
-                  <Grid size={12}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Họ và Tên Chủ Xe"
-                      placeholder="Ví dụ: NGUYỄN VĂN A"
-                      value={formData.ownerName}
-                      onChange={handleChange('ownerName')}
-                      
-                      // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
-                      error={Boolean(errors.ownerName)}
-                      helperText={errors.ownerName}
-                      
-                      slotProps={{
-                        input: {
-                          style: { textTransform: 'uppercase' },
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <PersonIcon />
-                            </InputAdornment>
-                          ),
-                        },
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Số CCCD / Định danh"
-                      value={formData.ownerId}
-                      onChange={handleChange('ownerId')}
-                      
-                      // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
-                      error={Boolean(errors.ownerId)}
-                      helperText={errors.ownerId}
-                      
-                      slotProps={{
-                        input: {
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <BadgeIcon />
-                            </InputAdornment>
-                          ),
-                        }
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Số Điện Thoại"
-                      value={formData.ownerPhone}
-                      onChange={handleChange('ownerPhone')}
-                      
-                      // 🌟 CÚ PHÁP BÁO LỖI ĐỎ CỦA MUI:
-                      error={Boolean(errors.ownerPhone)}
-                      helperText={errors.ownerPhone}
-                      
-                      slotProps={{
-                        input: {
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <PhoneIcon />
-                            </InputAdornment>
-                          ),
-                        }
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
 
           {/* GHI CHÚ */}
           <Grid size={{ xs: 12, md: 6 }}>

@@ -41,7 +41,7 @@ export default function SecurityLayout() {
     { text: 'Tổng Quan Camera', path: '/camera-overview', icon: <VideocamIcon /> },
     { text: 'Lịch Sử Ra Vào', path: '/log-history', icon: <HistoryIcon /> },
     { text: 'Đăng Ký Xe', path: '/register-car', icon: <NoCrashIcon /> },
-    {text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon />},
+    { text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon /> },
     { text: 'Quản Lý Hệ Thống', path: '/system-management', icon: <SettingsIcon /> },
   ];
 
@@ -55,7 +55,7 @@ export default function SecurityLayout() {
         position="fixed"
         sx={{
           // 🌟 Đổi màu nền Header động (Trắng tinh <-> Đen Card)
-          bgcolor: theme.palette.customBg.card,
+          bgcolor: theme.palette.customBg.header,
           borderBottom: `2px solid ${theme.palette.customBg.border}`,
           zIndex: (t) => t.zIndex.drawer + 1,
           boxShadow: theme.palette.mode === 'light' ? '0px 2px 4px rgba(0,0,0,0.05)' : 'none'
@@ -65,11 +65,11 @@ export default function SecurityLayout() {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {/* Nút bấm ẩn/hiện Sidebar */}
             <IconButton
-              color="inherit"
+
               aria-label="toggle drawer"
               onClick={handleToggleDrawer}
               edge="start"
-              sx={{ mr: 2, color: theme.palette.primary.main }}
+              sx={{ mr: 2, color: theme.palette.text.textheader }}
             >
               {open ? <ChevronLeftIcon /> : <MenuIcon />}
             </IconButton>
@@ -80,7 +80,7 @@ export default function SecurityLayout() {
               noWrap
               component="div"
               sx={{
-                color: theme.palette.primary.main,
+                color: theme.palette.text.textheader,
                 fontWeight: 'bold'
               }}
             >
@@ -89,7 +89,7 @@ export default function SecurityLayout() {
           </Box>
 
           {/* 🌟 ĐẶT NÚT ĐỔI THEME GỌN GÀNG Ở GÓC PHẢI THANH HEADER */}
-          <Box>
+          <Box >
             <ThemeToggleButton />
           </Box>
         </Toolbar>
@@ -166,7 +166,7 @@ export default function SecurityLayout() {
                       }
                     }}
                   >
-                    <ListItemIcon sx={{ color: isSelected ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                    <ListItemIcon sx={{ color: isSelected ? theme.palette.primary.main : theme.palette.text.primary }}>
                       {item.icon}
                     </ListItemIcon>
                     <ListItemText
