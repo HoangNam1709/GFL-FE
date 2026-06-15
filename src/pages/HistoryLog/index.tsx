@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import axios from 'axios';
+
+// 🌟 Import Service
+import { historyService, type FetchHistoryParams } from '../../services/HistoryService';
 
 import HistoryFilter from './HistoryFilter';
 import HistoryList from './HistoryList';
@@ -24,35 +26,36 @@ export default function HistoryLogPage() {
   const [searchCar, setSearchCar] = useState<string>('');
   const [page, setPage] = useState<number>(1);
 
-  // Hook gọi dữ liệu từ API Backend
+  // Hook gọi dữ liệu từ API Backend qua Service lớp trung gian
   useEffect(() => {
     const fetchLogs = async () => {
       setLoading(true);
       setError(null);
       try {
-        const queryParams: any = { page, limit: 10 };
+        // Build query params chuẩn hóa theo interface của Service
+        const queryParams: FetchHistoryParams = { page, limit: 10 };
         if (filterGate !== 'all') queryParams.gate_id = filterGate;
-        if (filterDate) queryParams.date = filterDate;;
+        if (filterDate) queryParams.date = filterDate;
         if (searchCar) queryParams.search = searchCar;
 
-        const response = await axios.get('http://127.0.0.1:8000/api/v1/access/history', {
-          params: queryParams
-        });
+        // 🌟 Gọi qua lớp Service sạch sẽ
+        const responseData = await historyService.getHistoryLogs(queryParams);
 
-        if (response.data && response.data.status === 'SUCCESS') {
-          setLogs(response.data.data);
-          setPagination(response.data.pagination);
+        if (responseData && responseData.status === 'SUCCESS') {
+          setLogs(responseData.data);
+          setPagination(responseData.pagination);
         } else {
           setError('Cấu trúc dữ liệu Backend không hợp lệ.');
         }
       } catch (err: any) {
-        console.error('Lỗi API:', err);
+        console.error('Lỗi API qua Service:', err);
         setError('Không thể kết nối tới máy chủ hoặc dữ liệu không tồn tại.');
       } finally {
         setLoading(false);
       }
     };
 
+    // Cơ chế Debounce hạn chế spam API liên tục khi gõ ô tìm kiếm
     const delayDebounce = setTimeout(() => {
       fetchLogs();
     }, 500);
@@ -80,7 +83,7 @@ export default function HistoryLogPage() {
             textTransform: 'uppercase'
           }}
         >
-          NHẬT KÝ KIỂM SOÁT XE RA VÀO BẾN
+          Nhật ký kiểm soát xe ra vào bến
         </Typography>
         <Typography
           variant="body2"
