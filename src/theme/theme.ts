@@ -63,3 +63,9 @@ export const darkTheme = createTheme({
     }
   }
 });
+
+export const theme = createTheme({
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+  },
+});
