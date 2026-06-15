@@ -21,113 +21,38 @@ src/
 ├── App.tsx             # Component gốc của ứng dụng
 └── main.tsx            # File entry point để render React vào DOM
 
-lib install:
-@mui/material @emotion/react @emotion/styled @mui/icons-material react-router-dom
 
-// Luồng hoạt động:
-[ BẢO VỆ ]
-    │
-    ▼ (1) Click nút "Thêm CCCD" & Chọn file
- ┌────────────────────────────────────────────────────────┐
- │ FRONT-END (React.js)                                   │
- ├────────────────────────────────────────────────────────┤
- │ • Tạo link hiển thị ảnh tạm thời (URL.createObjectURL)  │
- │ • Đóng gói file vào FormData: append('image', file)    │
- └──────────────────────────┬─────────────────────────────┘
-                            │
-                            │ (2) POST /ocr/cccd (Gửi kèm FormData)
-                            ▼
- ┌────────────────────────────────────────────────────────┐
- │ BIÊN GIỚI BẢO MẬT (CORS Middleware)                    │
- ├────────────────────────────────────────────────────────┤
- │ • Kiểm tra xem cổng 5173 có được phép gọi không       │
- │ • Nếu OK -> Cấp "thẻ thông hành" và cho đi tiếp        │
- └──────────────────────────┬─────────────────────────────┘
-                            │
-                            │ (3) Khớp đúng key 'image'
-                            ▼
- ┌────────────────────────────────────────────────────────┐
- │ BACK-END (FastAPI Python)                              │
- ├────────────────────────────────────────────────────────┤
- │ • Bốc file ảnh ra, lưu vào thư mục /uploads            │
- │ • Chuyển đường dẫn ảnh sang hàm extract_cccd(file)     │
- │ • Mô hình AI (OCR) quét ảnh và dịch thành TEXT         │
- └──────────────────────────┬─────────────────────────────┘
-                            │
-                            │ (4) Trả về chuỗi JSON (Mã 200 OK)
-                            │     { "status": "SUCCESS", "data": {...} }
-                            ▼
- ┌────────────────────────────────────────────────────────┐
- │ FRONT-END (Nhận phản hồi & Render)                     │
- ├────────────────────────────────────────────────────────┤
- │ • Nhận data chữ từ AI (id, name, birth, place...)      │
- │ • Trộn chung với link ảnh tạm thời ở Bước 1            │
- │ • setVehicleData() -> Kích hoạt cập nhật State         │
- └──────────────────────────┬─────────────────────────────┘
-                            │
-                            ▼ (5) Giao diện thay đổi (Re-render)
- [ MÀN HÌNH BỐT BẢO VỆ HIỂN THỊ DÀN 3 CỘT REAL-TIME ]
+# 🚀 Hệ Thống Kiểm Soát Xe Ra Vào (KSXRV) - Frontend Terminal
 
-## MUI Components
+Phân hệ giao diện quản lý và đối soát thời gian thực dành cho trạm kiểm soát ra vào cảng/bến xe. Hệ thống tích hợp công nghệ nhận diện biển số (OCR), định danh thẻ căn cước công dân (CCCD) và đối soát khuôn mặt bằng AI (Face Match), kết hợp quét mã vé (QR Code/Barcode) để tự động hóa quy trình xuất nhập bến.
 
-### 1. Nhóm Bố Cục & Khung Sườn (Layout)
+---
 
-Đây là những component dùng để xây dựng cấu trúc, chia cột và định hình giao diện (giống như cách bạn vừa dùng cho hệ thống giám sát xe).
+## 🛠️ Công Nghệ Sử Dụng
 
-* **`Box`** : Component vạn năng, mặc định là thẻ `<div>`. Nó là "vua" trong MUI dùng để custom CSS nhanh qua thuộc tính `sx` (như `display: 'flex'`, `margin`, `padding`).
-* **`Container`** : Giới hạn chiều rộng của trang web theo các chuẩn màn hình (sm, md, lg, xl) để nội dung không bị tràn ra mép màn hình lớn.
-* **`Grid` (hoặc `Grid2` bản mới)** : Hệ thống chia cột (12 columns) vô cùng mạnh mẽ để làm giao diện đáp ứng (Responsive) trên cả điện thoại và máy tính.
-* **`Stack`** : Dùng để xếp các phần tử con theo một hàng dọc hoặc hàng ngang với khoảng cách đều nhau (`spacing`) rất nhanh chóng.
+* **Framework:** React.js (TypeScript)
+* **Bundler:** Vite
+* **UI Library:** Material-UI (MUI v5/v6)
+* **Icons:** `@mui/icons-material`
+* **State Management & HTTP Client:** Axios / React Context API
 
-### 2. Nhóm Điều Hướng (Navigation)
+---
 
-Giúp người dùng di chuyển giữa các trang hoặc các tính năng trong hệ thống.
+## 💻 Hướng Dẫn Cài Đặt & Khởi Chạy
 
-* **`AppBar` & `Toolbar`** : Thanh tiêu đề/Menu cố định ở trên cùng của trang web (Header).
-* **`Drawer`** : Thanh menu bên cạnh (Sidebar) có thể trượt ra/vào hoặc cố định, chuyên dùng cho các trang Dashboard quản trị.
-* **`Tabs` & `Tab`** : Thanh chuyển đổi qua lại giữa các tab nội dung trong cùng một trang.
-* **`Link`** : Custom lại thẻ `<a>` mặc định theo chuẩn thiết kế của Material Design.
+### 1. Yêu cầu hệ thống
 
-### 3. Nhóm Nhập Liệu (Inputs)
+* Đã cài đặt **Node.js** (Khuyến nghị phiên bản LTS `v18` hoặc `v20` trở lên).
+* Trình quản lý gói **npm** hoặc **yarn**.
 
-Hầu như dự án nào cũng cần form để thu thập dữ liệu từ người dùng.
+### 2. Các bước cài đặt
 
-* **`Button`** : Nút bấm (có các dạng variant: `contained` - tô đậm, `outlined` - viền, `text` - chỉ có chữ).
-* **`TextField`** : Ô nhập dữ liệu (Input) cực kỳ thông minh, tự động xử lý hiệu ứng kéo nhãn (`label`) lên trên khi người dùng click vào.
-* **`Select`** : Menu thả xuống (Dropdown) để chọn một hoặc nhiều lựa chọn.
-* **`Checkbox` / `Radio` / `Switch`** : Các nút tích chọn, chọn 1 trong nhiều, hoặc công tắc bật/tắt (On/Off).
+Mở Terminal tại thư mục gốc của phân hệ `Frontend` và chạy các lệnh sau:
 
-### 4. Nhóm Hiển Thị Dữ Liệu (Data Display)
+```bash
+# 1. Cài đặt các thư viện phụ thuộc (Dependencies)
+npm install
 
-Dùng để trình bày thông tin một cách trực quan, đẹp mắt.
-
-* **`Typography`** : Quản lý toàn bộ chữ nghĩa, văn bản (thay thế cho `<h1>`, `<h2>`, `<p>`, `<span>`) để đảm bảo font chữ và kích thước đồng bộ.`variant` trong Typography quy định **kích thước chữ, độ dày (font-weight), và khoảng cách dòng (line-height)** theo một hệ thống phân cấp chuẩn (Typography Scale).
-* **`Table`** : Hệ thống bảng dữ liệu (Bao gồm `TableHead`, `TableBody`, `TableCell`, `TableRow`) để làm các danh sách quản lý.
-* **`List` & `ListItem`** : Danh sách dạng dòng (như danh sách các menu ở Sidebar trong code của bạn).
-* **`Card`** : Thẻ bọc nội dung (gồm `CardContent`, `CardActions`, `CardHeader`), rất hay dùng để làm danh sách sản phẩm, tin tức.
-* **`Avatar`** : Hiển thị ảnh đại diện hình tròn hoặc hình vuông của người dùng.
-* **`Chip`** : Các thẻ tag nhỏ (ví dụ: hiển thị trạng thái "Đang hoạt động" màu xanh, "Đã khóa" màu đỏ).
-
-### 5. Nhóm Phản Hồi & Thông Báo (Feedback)
-
-Tương tác và đưa ra phản hồi cho hành động của người dùng.
-
-* **`CircularProgress` / `LinearProgress`** : Biểu tượng xoay tròn hoặc thanh chạy ngang báo hiệu hệ thống đang tải dữ liệu (Loading).
-* **`Dialog`** : Hộp thoại Pop-up hiện lên giữa màn hình yêu cầu xác nhận (ví dụ: "Bạn có chắc chắn muốn xóa không?").
-* **`Snackbar` & `Alert`** : Thanh thông báo nhỏ tự động bật lên ở góc màn hình rồi ẩn đi (ví dụ: "Lưu thành công!", "Đã có lỗi xảy ra").
-
-### **Phân chia cấu trúc Responsive theo cấu hình màn hình (Breakpoints)**
-
-Hệ thống giám sát phân tách luồng hiển thị dựa trên mốc ranh giới cốt lõi là **$1200\text{px}$ (`lg` breakpoint)** để tối ưu hóa trải nghiệm trên các thiết bị từ trạm bốt bảo vệ đến thiết bị di động:
-
-* **Màn hình PC / Laptop cỡ lớn (**$\ge 1200\text{px}$** - `lg` và `xl`):**
-
-  * Toàn bộ giao diện được tổ chức trên một hàng ngang duy nhất nhằm tận dụng tối đa không gian hiển thị thời gian thực (Real-time Monitoring).
-  * **Cột 1 (Thông tin CCCD OCR):** Chiếm tỷ lệ cố định **$33.33\%$** độ rộng màn hình (`flexBasis: 'calc(33.33% - 16px)'`).
-  * **Cụm Camera (Cột 2 & 3):** Chiếm **$66.66\%$** không gian còn lại. Phía trong cụm camera, hai khối **Ảnh xe/Biển số LPR** và **Ảnh mặt tài xế** được chia đều theo tỷ lệ **$50\% - 50\%$** hàng ngang (`flexBasis: 'calc(50% - 8px)'`).
-* **Màn hình Máy tính bảng / Điện thoại / Laptop nhỏ (**$< 1200\text{px}$** - `xs`, `sm`, `md`):**
-
-  * Thuộc tính `flexDirection` chuyển từ `'row'` sang `'column'`.
-  * Tất cả 3 khối chức năng (`CccdInfo`, `Ảnh xe LPR`, `Ảnh mặt tài xế`) đồng loạt tự động giãn độ rộng ra **$100\%$** (`flexBasis: '100%'`). Các cột lúc này xếp chồng lên nhau theo chiều dọc, giúp người dùng dễ dàng cuộn giao diện mà không bị thu nhỏ hình ảnh hay chèn ép ký tự chữ.
-
-task: nghiên cứu responsive, nút đổi màu nền, layout hiển thị trang dashboard 6 màn hình cam trước khi vào màn hình thêm cccd. vẽ lại luồng bên trên, form đăng ký xe theo người , form đăng ký  người ,
+# 2. Khởi chạy dự án ở môi trường Phát triển (Development)
+npm run dev
+```
