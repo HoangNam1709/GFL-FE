@@ -5,6 +5,7 @@ import HistoryLogPage from '../pages/HistoryLog';
 import VehicleRegistrationPage from '../pages/VehicleRegistration';
 import UserRegistrationPage from '../pages/PeopleRegister';
 import CameraOverviewPage from '../pages/CameraOverView';
+import NotFoundPage from '../pages/NotFound/NotFound';
 // Các trang tạm thời đặt làm Mock để test Layout, tuần sau ta sẽ tách file sau
 const SystemManagementPage = () => <span style={{ color: '#fff' }}>Màn hình Quản Lý Hệ Thống</span>;
 export default function AppRoutes() {
@@ -20,7 +21,7 @@ export default function AppRoutes() {
         <Route path="/people-register" element={<UserRegistrationPage/>} />
         <Route path="/system-management" element={<SystemManagementPage />} />
         {/* Nếu vào đường dẫn không tồn tại, tự động chuyển hướng về trang Cổng Vào */}
-        <Route path="*" element={<Navigate to="/vehicle-in" replace />} />
+        <Route path="*" element={<NotFoundPage/>} />
       </Route>
     </Routes>
   );
