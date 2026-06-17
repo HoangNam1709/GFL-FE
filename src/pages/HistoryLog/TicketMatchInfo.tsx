@@ -49,12 +49,12 @@ export default function TicketMatchInfo({ item }: TicketMatchInfoProps) {
           
           <Grid size={{ xs: 6, sm: 3 }} sx={{ textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Mã QR:</Typography>
-            <Box component="img" src={item.ticket.qr_image_url} sx={{ width: '70px', height: '70px', objectFit: 'contain', bgcolor: 'white', p: 0.5, border: '1px solid #ddd', borderRadius: 1 }} />
+            <Box component="img" src={item.ticket.qr_image_url} sx={{ width: '100%', height: '150px', objectFit: 'contain', bgcolor: 'white', p: 0.5, border: '1px solid #ddd', borderRadius: 1 }} />
           </Grid>
           
           <Grid size={{ xs: 6, sm: 3 }} sx={{ textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Mã vạch Barcode:</Typography>
-            <Box component="img" src={item.ticket.barcode_image_url || ''} sx={{ width: '100%', height: '45px', objectFit: 'contain', bgcolor: 'white', p: 0.5, border: '1px solid #ddd', borderRadius: 1 }} />
+            <Box component="img" src={item.ticket.barcode_image_url || ''} sx={{ width: '100%', height: '100%', objectFit: 'contain', bgcolor: 'white', p: 0.5, border: '1px solid #ddd', borderRadius: 1 }} />
           </Grid>
 
         </Grid>

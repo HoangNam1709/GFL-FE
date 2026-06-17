@@ -10,10 +10,10 @@ import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import RouterIcon from '@mui/icons-material/Router';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import GppGoodIcon from '@mui/icons-material/GppGood';
 interface SidebarProps {
   open: boolean;
   drawerWidth: number;
@@ -37,11 +37,28 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
     { text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon /> },
   ];
 
-  const settingSubItems = [
-    { text: 'Tài khoản & Quyền', path: '/system-management/users', icon: <ManageAccountsIcon fontSize="small" /> },
-    { text: 'Cổng & Thiết bị (IoT)', path: '/system-management/gates', icon: <RouterIcon fontSize="small" /> },
-    { text: 'Danh mục loại xe & Hãng', path: '/system-management/master-data', icon: <LocalShippingIcon fontSize="small" /> },
-  ];
+const settingSubItems = [
+  { 
+    text: 'Quản lý Tài khoản', 
+    path: '/system-management/users', 
+    icon: <ManageAccountsIcon fontSize="small" /> 
+  },
+  { 
+    text: 'Phân quyền & Vai trò', 
+    path: '/system-management/permissions', 
+    icon: <GppGoodIcon fontSize="small" /> 
+  },
+  { 
+    text: 'Cổng & Thiết bị (IoT)', 
+    path: '/system-management/gates', 
+    icon: <RouterIcon fontSize="small" /> 
+  },
+  { 
+    text: 'Danh mục loại xe & Hãng', 
+    path: '/system-management/master-data', 
+    icon: <LocalShippingIcon fontSize="small" /> 
+  },
+];
 
   return (
     <Drawer

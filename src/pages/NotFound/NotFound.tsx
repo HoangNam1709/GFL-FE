@@ -1,5 +1,3 @@
-// src/pages/NotFound/index.tsx
-
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
@@ -16,7 +14,6 @@ export default function NotFoundPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '100vh',
         p: 3,
         textAlign: 'center',
         // Tự động đổi màu nền theo hệ thống (Dark/Light)

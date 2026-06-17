@@ -1,10 +1,7 @@
-// src/layouts/SecurityLayout/index.tsx
-
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, Toolbar, CssBaseline, useTheme } from '@mui/material';
 
-// Import 2 Component độc lập vừa bóc tách
 import Header from './Header';
 import Sidebar from './Sidebar';
 

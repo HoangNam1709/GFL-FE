@@ -1,5 +1,3 @@
-// src/layouts/SecurityLayout/Header.tsx
-
 import { AppBar, Toolbar, Box, Typography, IconButton, useTheme } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';

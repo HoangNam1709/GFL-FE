@@ -33,7 +33,7 @@ export default function VehicleGateInfo({ item, renderStatusChip }: VehicleGateI
         component="img"
         src={item.plate?.plate_image_url || 'https://placehold.co/600x400?text=No+Plate+Image'}
         alt="Plate camera capture"
-        sx={{ width: '100%', height: '140px', objectFit: 'contain', borderRadius: 2, bgcolor: '#000', border: `1px solid ${theme.palette.customBg.border}` }}
+        sx={{ width: '100%', height: '145px', objectFit: 'contain', borderRadius: 2, bgcolor: '#000', border: `1px solid ${theme.palette.customBg.border}` }}
       />
     </Grid>
   );

@@ -29,11 +29,11 @@ export default function DriverIdentityInfo({ item }: DriverIdentityInfoProps) {
       <Grid container spacing={2}>
         <Grid size={{ xs: 6 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 500 }}>Ảnh chân dung CCCD:</Typography>
-          <Box component="img" src={item.person?.cccd_face_image_url || 'https://placehold.co/150x150?text=No+Face'} sx={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: 2, border: `1px solid ${theme.palette.customBg.border}` }} />
+          <Box component="img" src={item.person?.cccd_face_image_url || 'https://placehold.co/150x150?text=No+Face'} sx={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: 2, border: `1px solid ${theme.palette.customBg.border}` }} />
         </Grid>
         <Grid size={{ xs: 6 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 500 }}>Ảnh Live Camera:</Typography>
-          <Box component="img" src={item.person?.live_face_image_url || 'https://placehold.co/150x150?text=No+Live'} sx={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: 2, border: `1px solid ${theme.palette.customBg.border}` }} />
+          <Box component="img" src={item.person?.live_face_image_url || 'https://placehold.co/150x150?text=No+Live'} sx={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: 2, border: `1px solid ${theme.palette.customBg.border}` }} />
         </Grid>
       </Grid>
     </Grid>
