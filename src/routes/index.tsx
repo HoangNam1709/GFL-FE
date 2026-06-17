@@ -7,6 +7,7 @@ import UserRegistrationPage from '../pages/PeopleRegister';
 import CameraOverviewPage from '../pages/CameraOverView';
 import NotFoundPage from '../pages/NotFound/NotFound';
 import PermissionPage from '../pages/Permission/Permission';
+import UserManagementPage from '../pages/AccountManagement/UserManagementPage';
 export default function AppRoutes() {
   return (
     <Routes>
@@ -19,6 +20,7 @@ export default function AppRoutes() {
         <Route path="/register-car" element={<VehicleRegistrationPage />} />
         <Route path="/people-register" element={<UserRegistrationPage />} />
         <Route path="/system-management/permissions" element={<PermissionPage />} />
+        <Route path="/system-management/users-management" element={<UserManagementPage/>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
