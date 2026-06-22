@@ -94,6 +94,54 @@ export default function CccdInfo({ data, onUpdateField }: CccdInfoProps) {
               } 
             }
           }}
+          sx={{ mb: 2 }}
+        />
+
+        {/* Ô NHẬP LIỆU: Ngày sinh */}
+        <TextField
+          fullWidth
+          label="Ngày sinh"
+          variant="outlined"
+          value={data.birth || ''}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('birth', e.target.value)}
+          slotProps={{
+            input: { 
+              sx: { 
+                color: theme.palette.text.primary, 
+                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
+              } 
+            },
+            inputLabel: { 
+              sx: { 
+                color: theme.palette.primary.main,
+                '&.Mui-focused': { color: theme.palette.primary.main }
+              } 
+            }
+          }}
+          sx={{ mb: 2 }}
+        />
+
+        {/* Ô NHẬP LIỆU: Nơi cấp / Nơi ở */}
+        <TextField
+          fullWidth
+          label="Nơi cấp / Nơi ở"
+          variant="outlined"
+          value={data.place || ''}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('place', e.target.value)}
+          slotProps={{
+            input: { 
+              sx: { 
+                color: theme.palette.text.primary, 
+                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
+              } 
+            },
+            inputLabel: { 
+              sx: { 
+                color: theme.palette.primary.main,
+                '&.Mui-focused': { color: theme.palette.primary.main }
+              } 
+            }
+          }}
         />
       </CardContent>
     </Card>

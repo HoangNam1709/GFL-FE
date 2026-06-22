@@ -38,9 +38,9 @@ export function useVehicleIn() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (response.data && response.data.status === "SUCCESS") {
-        const cccdApiData = response.data.data;
-
+      console.log("OCR response:", response.data);
+      const cccdApiData = response.data?.data;
+      if (response.data && cccdApiData) {
         setVehicleData({
           id: cccdApiData?.id || "Không rõ",
           name: cccdApiData?.name || "Không rõ",
@@ -55,7 +55,15 @@ export function useVehicleIn() {
           entryTime: new Date().toLocaleString('vi-VN')
         });
 
-        console.log("Xử lý OCR dữ liệu CCCD thành công!");
+        if (response.data.status !== "SUCCESS") {
+          console.warn("OCR trả về data nhưng status khác SUCCESS:", response.data.status);
+          alert(`Backend trả về trạng thái ${response.data.status}, nhưng vẫn nhận được dữ liệu CCCD.`);
+        } else {
+          console.log("Xử lý OCR dữ liệu CCCD thành công!");
+        }
+      } else {
+        console.warn("OCR response không có data:", response.data);
+        alert(`Backend không trả về dữ liệu OCR hợp lệ. Trạng thái: ${response.data?.status || 'unknown'}`);
       }
     } catch (error) {
       console.error("❌ Lỗi thực tế xuất hiện:", error);

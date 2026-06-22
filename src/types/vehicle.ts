@@ -15,11 +15,18 @@ export interface XitecLog {
 
 export interface ApiResponseCCCD {
   status: string;
+  message: string;
   data: {
-    id: string;
-    name: string;
-    birth: string;
-    sex: string | null;
-    place: string;
+    session: any;
+    vehicle: any;
+    person: {
+      cccd_number: string;
+      full_name: string;
+      birth: string;
+      sex: string | null;
+      place: string;
+      cccd_face_image_url: string;
+      cccd_original_image_url: string;
+    };
   };
 }
