@@ -1,5 +1,3 @@
-// src/pages/VehicleOut/index.tsx
-
 import { useState } from 'react';
 import {
   Box,
@@ -11,7 +9,15 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Button
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -21,19 +27,27 @@ import { useNavigate } from 'react-router-dom';
 
 import CccdInfo from '../VehicleIn/components/CccdInfo';
 import CameraInfo from '../VehicleIn/components/CameraInfo';
-import HistoryLog from '../VehicleIn/components/HistoryLog';
 
-// 🌟 ĐƯỜNG DẪN API CHECKOUT DUY NHẤT CỦA BẠN
+// Định nghĩa Interface cho một dòng lịch sử đầy đủ
+interface CheckoutHistoryLog {
+  sessionId: string;
+  name: string;
+  licensePlate: string;
+  checkinTime: string;
+  checkoutTime: string;
+}
+
 const API_CHECKOUT_URL = "http://127.0.0.1:8000/api/v1/access/checkout";
 
 export default function VehicleOutPage() {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  // State lưu dữ liệu thật nhận từ BE để hiển thị lên màn hình đối soát
   const [vehicleData, setVehicleData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [printHistory, setPrintHistory] = useState<string[]>([]);
+  
+  // 🌟 CẬP NHẬT: State lưu lịch sử dạng Object để giữ cả thời gian Vào + Ra
+  const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryLog[]>([]);
 
   const [isOpenInitModal, setIsOpenInitModal] = useState<boolean>(true);
   const [exitInput, setExitInput] = useState({
@@ -41,7 +55,6 @@ export default function VehicleOutPage() {
     ticketCode: ''
   });
 
-  // HÀM XỬ LÝ CHECKOUT CHÍNH: Cập nhật định dạng application/x-www-form-urlencoded
   const handleFinalCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!exitInput.eventUid.trim() && !exitInput.ticketCode.trim()) {
@@ -52,24 +65,17 @@ export default function VehicleOutPage() {
     try {
       setIsLoading(true);
 
-      // 🌟 GIẢI PHÁP: Sử dụng URLSearchParams để mã hóa dữ liệu chuẩn format của BE
       const params = new URLSearchParams();
-
       if (exitInput.eventUid.trim()) {
         params.append('event_uid', exitInput.eventUid.trim());
       }
       if (exitInput.ticketCode.trim()) {
         params.append('ticket_code', exitInput.ticketCode.trim());
       }
-
-      // Thêm trường note mặc định nếu Backend yêu cầu bắt buộc (như trong Swagger hiển thị)
       params.append('note', 'Checkout qua ứng dụng Frontend');
 
-      // Thực hiện gửi POST với Content-Type chuẩn
       const response = await axios.post(API_CHECKOUT_URL, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
       if (response.data && response.data.status === "SUCCESS") {
@@ -78,8 +84,7 @@ export default function VehicleOutPage() {
         const vehicleInfo = resData.detail?.vehicle;
         const personInfo = resData.detail?.person;
 
-        // Map dữ liệu thật từ BE vào state hiển thị
-        setVehicleData({
+        const mappedData = {
           id: personInfo?.cccd_number || sessionInfo?.cccd_number || "",
           name: personInfo?.full_name || sessionInfo?.full_name || "N/A",
           birth: personInfo?.birth || "",
@@ -90,18 +95,22 @@ export default function VehicleOutPage() {
           driverFaceImage: personInfo?.live_face_image_url || personInfo?.cccd_face_image_url || "",
           licensePlateImage: vehicleInfo?.plate_image_url || vehicleInfo?.frame_image_url || "",
           entryTime: sessionInfo?.checked_in_at || ""
-        });
+        };
 
+        setVehicleData(mappedData);
         alert("Xác thực thông tin cổng ra THÀNH CÔNG! Mở barrier cho xe xuất bến.");
 
-        const displayPlate = vehicleInfo?.plate_number || "Chỉ có người";
-        const displayName = personInfo?.full_name || "N/A";
-        setPrintHistory([
-          `[CHECKOUT THÀNH CÔNG] Đối tượng: ${displayName} (${displayPlate}) - Xuất bến lúc: ${new Date().toLocaleTimeString()}`,
-          ...printHistory
-        ]);
+        // 🌟 CẬP NHẬT: Đẩy toàn bộ thông tin phiên (Gồm cả checkin từ BE và checkout hiện tại) vào bảng lịch sử
+        const newLog: CheckoutHistoryLog = {
+          sessionId: sessionInfo?.session_id || `SS-${Date.now()}`,
+          name: mappedData.name,
+          licensePlate: mappedData.licensePlate,
+          checkinTime: sessionInfo?.checked_in_at || "N/A", // Lấy từ DB gốc của BE trả về
+          checkoutTime: sessionInfo?.checked_out_at || new Date().toLocaleString('vi-VN') // Thời gian ra thực tế
+        };
 
-        setIsOpenInitModal(false);
+        setCheckoutHistory([newLog, ...checkoutHistory]);
+        setIsOpenInitModal(false); 
       } else {
         alert(`Từ chối xuất bến: ${response.data?.message || 'Lỗi đối soát hệ thống'}`);
       }
@@ -112,9 +121,10 @@ export default function VehicleOutPage() {
       setIsLoading(false);
     }
   };
+
   return (
     <Box sx={{ bgcolor: theme.palette.customBg.main, minHeight: '100vh', p: { xs: 2, sm: 3 } }}>
-
+      
       {/* HEADER */}
       <Box sx={{ mb: 4, p: 2, borderBottom: `2px solid ${theme.palette.customBg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -130,7 +140,7 @@ export default function VehicleOutPage() {
         </Button>
       </Box>
 
-      {/* THÂN HIỂN THỊ DỮ LIỆU ĐỐI SOÁT SAU KHI CHECKOUT */}
+      {/* THÂN HIỂN THỊ DỮ LIỆU ĐỐI SOÁT */}
       {!vehicleData ? (
         <Box sx={{ textAlign: 'center', py: 12, color: theme.palette.text.secondary }}>
           <Typography variant="h6">Vui lòng bấm nút "Quét Xe Ra Mới" hoặc nhập Event UID để tiến hành thực hiện phiên Checkout.</Typography>
@@ -139,23 +149,66 @@ export default function VehicleOutPage() {
         <Box>
           <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 3, alignItems: 'stretch' }}>
             <Box sx={{ flex: { xs: '1 1 100%', lg: '0 0 calc(33.33% - 16px)' }, width: '100%' }}>
-              {/* Hiển thị thông tin người lấy động từ BE */}
-              <CccdInfo data={vehicleData} onUpdateField={() => { }} />
+              <CccdInfo data={vehicleData} onUpdateField={() => {}} /> 
             </Box>
             <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 16px)' }, width: '100%' }}>
-              {/* Hiển thị hình ảnh camera nhận diện biển số lấy động từ BE */}
               <CameraInfo data={vehicleData} />
             </Box>
           </Box>
         </Box>
       )}
 
-      {/* LỊCH SỬ LOG */}
-      <Box sx={{ mt: 4 }}>
-        <HistoryLog history={printHistory} />
+      {/* 🌟 CẬP NHẬT: HIỂN THỊ BẢNG LỊCH SỬ PHIÊN RA VÀO TOÀN DIỆN */}
+      <Box sx={{ mt: 5 }}>
+        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
+          NHẬT KÝ PHIÊN XE XUẤT BẾN TRONG CA
+        </Typography>
+        <TableContainer component={Paper} sx={{ border: `1px solid ${theme.palette.customBg.border}`, boxShadow: 'none' }}>
+          <Table>
+            <TableHead sx={{ bgcolor: theme.palette.customBg.border }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 'bold' }}>Mã Phiên (Session ID)</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Họ và Tên</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Biển Số Xe / Đối Tượng</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Thời Gian Vào (Check-in)</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Thời Gian Ra (Check-out)</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Trạng Thái</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {checkoutHistory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                    Chưa có phiên nào thực hiện checkout trong phiên làm việc này.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                checkoutHistory.map((log) => (
+                  <TableRow key={log.sessionId} hover>
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{log.sessionId}</TableCell>
+                    <TableCell>{log.name}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={log.licensePlate} 
+                        color={log.licensePlate.includes("Không có xe") ? "default" : "primary"} 
+                        variant="outlined" 
+                        size="small" 
+                      />
+                    </TableCell>
+                    <TableCell sx={{ color: 'success.main', fontWeight: 500 }}>{log.checkinTime}</TableCell>
+                    <TableCell sx={{ color: 'error.main', fontWeight: 500 }}>{log.checkoutTime}</TableCell>
+                    <TableCell>
+                      <Chip label="ĐÃ RA" color="success" size="small" sx={{ fontWeight: 'bold', color: '#fff' }} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
 
-      {/* MODAL NHẬP MÃ ĐỊNH DANH - THỰC HIỆN GỌI LỆNH LUÔN */}
+      {/* MODAL NHẬP MÃ ĐỊNH DANH */}
       <Dialog open={isOpenInitModal} onClose={() => setIsOpenInitModal(false)} maxWidth="xs" fullWidth>
         <form onSubmit={handleFinalCheckout}>
           <DialogTitle sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
@@ -165,7 +218,6 @@ export default function VehicleOutPage() {
             <Typography variant="body2" color="text.secondary">
               Nhập mã định danh sự kiện hoặc quét mã vé. Hệ thống sẽ tự động đối soát thông tin gốc và thực hiện lệnh kết thúc phiên xuất bến.
             </Typography>
-
             <TextField
               label="Mã sự kiện Cổng Ra (Event UID)"
               variant="outlined"
@@ -173,13 +225,8 @@ export default function VehicleOutPage() {
               placeholder="LPR-xxxxxx"
               value={exitInput.eventUid}
               onChange={(e) => setExitInput({ ...exitInput, eventUid: e.target.value })}
-              slotProps={{
-                input: {
-                  startAdornment: <LocalShippingIcon sx={{ mr: 1 }} color="action" />
-                }
-              }}
+              slotProps={{ input: { startAdornment: <LocalShippingIcon sx={{ mr: 1 }} color="action" /> } }}
             />
-
             <TextField
               label="Mã số vé giấy (Ticket Code)"
               variant="outlined"
@@ -187,11 +234,7 @@ export default function VehicleOutPage() {
               placeholder="Quét mã vạch tại đây..."
               value={exitInput.ticketCode}
               onChange={(e) => setExitInput({ ...exitInput, ticketCode: e.target.value })}
-              slotProps={{
-                input: {
-                  startAdornment: <QrCodeScannerIcon sx={{ mr: 1 }} color="action" />
-                }
-              }}
+              slotProps={{ input: { startAdornment: <QrCodeScannerIcon sx={{ mr: 1 }} color="action" /> } }}
             />
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>

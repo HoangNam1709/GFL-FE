@@ -10,13 +10,13 @@ import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import PinIcon from '@mui/icons-material/Pin';
 import PersonIcon from '@mui/icons-material/Person';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
-import LocalAtmIcon from '@mui/icons-material/LocalAtm';
 import CloseIcon from '@mui/icons-material/Close';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
 import type { HistoryLogItem } from './types';
 
-// 🌟 Import đầy đủ 3 Component con đã được module hóa tách nhỏ
 import VehicleGateInfo from './VehicleGateInfo';
 import DriverIdentityInfo from './DriverIdentityInfo';
 import TicketMatchInfo from './TicketMatchInfo';
@@ -27,84 +27,112 @@ interface HistoryCardProps {
 
 export default function HistoryCard({ item }: HistoryCardProps) {
   const theme = useTheme();
-  const rawItem = item as any; // Ép kiểu an toàn giảm thiểu bắt bẻ từ bộ biên dịch
+  const rawItem = item as any; 
   
   const [openDetail, setOpenDetail] = useState<boolean>(false);
   const handleOpen = () => setOpenDetail(true);
   const handleClose = () => setOpenDetail(false);
 
-  const renderStatusChip = (status: 'CHECKED_IN' | 'CHECKED_OUT') => {
-    const isCheckIn = status === 'CHECKED_IN';
+  // Hàm hiển thị Badge trạng thái động dựa trên việc xe đã checkout hay chưa
+  const renderStatusChip = (status: string) => {
+    const isCheckedOut = status === 'CHECKED_OUT' || rawItem.checked_out_at !== null;
     return (
       <Chip 
-        label={isCheckIn ? "VÀO CẢNG" : "ĐÃ XUẤT BẾN"} 
+        label={isCheckedOut ? "ĐÃ XUẤT BẾN" : "TRONG BẾN"} 
         variant="filled"
         sx={{ 
           fontWeight: 'bold', fontSize: '11px', borderRadius: '6px', height: '24px',
-          bgcolor: isCheckIn ? 'rgba(46, 125, 50, 0.15)' : 'rgba(2, 136, 209, 0.15)',
-          color: isCheckIn ? theme.palette.success.main : theme.palette.info.main,
-          border: `1px solid ${isCheckIn ? 'rgba(46, 125, 50, 0.3)' : 'rgba(2, 136, 209, 0.3)'}`
+          bgcolor: isCheckedOut ? 'rgba(2, 136, 209, 0.15)' : 'rgba(46, 125, 50, 0.15)',
+          color: isCheckedOut ? theme.palette.info.main : theme.palette.success.main,
+          border: `1px solid ${isCheckedOut ? 'rgba(2, 136, 209, 0.3)' : 'rgba(46, 125, 50, 0.3)'}`
         }} 
       />
     );
   };
 
+  // Hàm tách ngày và giờ để hiển thị gọn gàng
+  const formatDateTime = (dateTimeStr: string | null) => {
+    if (!dateTimeStr) return { date: '--/--/----', time: '--:--:--' };
+    const parts = dateTimeStr.split(' ');
+    return {
+      time: parts[1] || '',
+      date: parts[0] || ''
+    };
+  };
+
+  const inTime = formatDateTime(rawItem.checked_in_at || rawItem.detected_at);
+  const outTime = formatDateTime(rawItem.checked_out_at);
+
   return (
     <>
-      {/* KHỐI CARD THÔNG TIN TỔNG QUAN NGOÀI DANH SÁCH */}
       <Card 
         sx={{ 
           bgcolor: theme.palette.customBg.card, border: `1px solid ${theme.palette.customBg.border}`,
-          borderRadius: 3, boxShadow: 'none', transition: 'all 0.2s ease-in-out',
+          borderRadius: 3, boxShadow: 'none', mb: 2, transition: 'all 0.2s ease-in-out',
           '&:hover': { borderColor: theme.palette.primary.main }
         }}
       >
         <CardContent sx={{ p: { xs: '16px !important', sm: '20px !important' } }}>
           <Grid container spacing={{ xs: 2.5, md: 2 }} sx={{ alignItems: 'center' }}>
-            {/* Cột 1: Trạng thái & Thời gian */}
-            <Grid size={{ xs: 12, sm: 3, md: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'row', sm: 'column' }, alignItems: { xs: 'center', sm: 'flex-start' }, gap: 1.5, flexWrap: 'wrap' }}>
-                {renderStatusChip(rawItem.status)}
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'row', sm: 'column' }, gap: { xs: 1, sm: 0.2 }, alignItems: 'center' }}>
-                  <Typography variant="body2" sx={{ fontFamily: 'monospace', color: theme.palette.text.secondary, fontSize: '13px', fontWeight: 600 }}>{rawItem.detected_at?.split(' ')[1]}</Typography>
-                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '11px' }}>{rawItem.detected_at?.split(' ')[0]}</Typography>
+            
+            {/* 🌟 CỘT 1: TRẠNG THÁI & TIMELINE VÀO - RA SONG SONG */}
+            <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box>{renderStatusChip(rawItem.status)}</Box>
+                
+                {/* Khối hiển thị song song Vào / Ra */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {/* Thời gian vào */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LoginIcon sx={{ color: theme.palette.success.main, fontSize: 16 }} />
+                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Vào:</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                      {inTime.time} <Box component="span" sx={{ fontSize: '11px', fontWeight: 400, color: 'text.secondary' }}>({inTime.date})</Box>
+                    </Typography>
+                  </Box>
+
+                  {/* Thời gian ra */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LogoutIcon sx={{ color: rawItem.checked_out_at ? theme.palette.info.main : theme.palette.text.disabled, fontSize: 16 }} />
+                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ra:</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: rawItem.checked_out_at ? 'inherit' : theme.palette.text.disabled }}>
+                      {rawItem.checked_out_at ? `${outTime.time} ` : 'Chưa ra '} 
+                      {rawItem.checked_out_at && <Box component="span" sx={{ fontSize: '11px', fontWeight: 400, color: 'text.secondary' }}>({outTime.date})</Box>}
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
             </Grid>
 
             {/* Cột 2: Cổng & Biển số */}
-            <Grid size={{ xs: 12, sm: 9, md: 3 }}>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Avatar variant="rounded" src={rawItem.plate?.plate_image_url || undefined} sx={{ width: 56, height: 56, bgcolor: theme.palette.mode === 'dark' ? '#222' : '#eaeaea', border: `1px solid ${theme.palette.customBg.border}` }}><PinIcon /></Avatar>
+            <Grid size={{ xs: 12, sm: 8, md: 2.5 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Avatar variant="rounded" src={rawItem.plate?.plate_image_url || undefined} sx={{ width: 52, height: 52, bgcolor: theme.palette.mode === 'dark' ? '#222' : '#eaeaea', border: `1px solid ${theme.palette.customBg.border}` }}><PinIcon /></Avatar>
                 <Box sx={{ minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                    <MeetingRoomIcon fontSize="small" sx={{ color: theme.palette.text.secondary, width: 16 }} />
-                    <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{rawItem.gate_name}</Typography>
+                    <MeetingRoomIcon fontSize="small" sx={{ color: theme.palette.text.secondary, width: 14 }} />
+                    <Typography variant="body2" noWrap sx={{ fontWeight: 600, fontSize: '13px' }}>{rawItem.gate_name || "Cổng kiểm soát"}</Typography>
                   </Box>
-                  <Box sx={{ display: 'inline-flex', bgcolor: rawItem.plate?.number ? 'rgba(255, 153, 0, 0.1)' : 'rgba(0,0,0,0.05)', px: 1, py: 0.2, borderRadius: 1 }}>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: rawItem.plate?.number ? '#ff9900' : theme.palette.text.secondary }}>{rawItem.plate?.number || 'ĐI BỘ / NO-PLATE'}</Typography>
+                  <Box sx={{ display: 'inline-flex', bgcolor: rawItem.expected_plate_number || rawItem.plate?.number ? 'rgba(255, 153, 0, 0.1)' : 'rgba(0,0,0,0.05)', px: 1, py: 0.2, borderRadius: 1 }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: (rawItem.expected_plate_number || rawItem.plate?.number) ? '#ff9900' : theme.palette.text.secondary }}>
+                      {rawItem.expected_plate_number || rawItem.plate?.number || 'ĐI BỘ / NO-PLATE'}
+                    </Typography>
                   </Box>
                 </Box>
               </Box>
             </Grid>
 
             {/* Cột 3: Tài xế */}
-            <Grid size={{ xs: 12, sm: 8, md: 3.5 }}>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Avatar src={rawItem.person?.cccd_face_image_url || undefined} sx={{ width: 54, height: 54 }}><PersonIcon /></Avatar>
+            <Grid size={{ xs: 12, sm: 8, md: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Avatar src={rawItem.person?.cccd_face_image_url || undefined} sx={{ width: 50, height: 50 }}><PersonIcon /></Avatar>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" noWrap sx={{ fontWeight: 700, mb: 0.5 }}>{rawItem.person?.full_name || 'CHƯA QUÉT ĐỊNH DANH'}</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                  <Typography variant="body2" noWrap sx={{ fontWeight: 700, mb: 0.5 }}>{rawItem.full_name || rawItem.person?.full_name || 'CHƯA QUÉT ĐỊNH DANH'}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <CreditCardIcon sx={{ color: theme.palette.text.secondary, fontSize: '15px' }} />
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{rawItem.person?.cccd_number || 'N/A'}</Typography>
+                      <CreditCardIcon sx={{ color: theme.palette.text.secondary, fontSize: '14px' }} />
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{rawItem.cccd_number || rawItem.person?.cccd_number || 'N/A'}</Typography>
                     </Box>
-                    {rawItem.ticket && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, bgcolor: 'rgba(0,0,0,0.03)', px: 0.5, borderRadius: 0.5 }}>
-                        <LocalAtmIcon sx={{ color: theme.palette.text.secondary, fontSize: '13px' }} />
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{rawItem.ticket.ticket_code}</Typography>
-                      </Box>
-                    )}
                   </Box>
                 </Box>
               </Box>
@@ -113,7 +141,9 @@ export default function HistoryCard({ item }: HistoryCardProps) {
             {/* Cột 4: ID Phiên */}
             <Grid size={{ xs: 12, sm: 4, md: 2 }} sx={{ textAlign: { md: 'right' }, borderLeft: { md: `1px dashed ${theme.palette.customBg.border}` }, pl: { md: 2 } }}>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>MÃ PHIÊN</Typography>
-              <Typography variant="body2" sx={{ fontFamily: 'monospace', color: theme.palette.primary.main, fontWeight: 700 }}>#{rawItem.session_id?.split('-')[1] || rawItem.session_id}</Typography>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace', color: theme.palette.primary.main, fontWeight: 700 }}>
+                #{rawItem.session_code?.split('-')[1] || rawItem.session_id?.split('-')[1] || rawItem.session_id}
+              </Typography>
             </Grid>
 
             {/* Cột 5: Nút bấm */}
@@ -124,7 +154,7 @@ export default function HistoryCard({ item }: HistoryCardProps) {
         </CardContent>
       </Card>
 
-      {/* POPUP CHI TIẾT ĐỐI SOÁT TOÀN DIỆN */}
+      {/* POPUP CHI TIẾT ĐỐI SOÁT */}
       <Dialog open={openDetail} onClose={handleClose} fullWidth maxWidth="md" slotProps={{ paper: { sx: { borderRadius: 4, backgroundImage: 'none' } } }}>
         <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -136,16 +166,9 @@ export default function HistoryCard({ item }: HistoryCardProps) {
         <Divider />
         <DialogContent sx={{ p: 3 }}>
           <Grid container spacing={3}>
-            
-            {/* 1. Thông tin phương tiện & cổng camera */}
             <VehicleGateInfo item={rawItem} renderStatusChip={renderStatusChip} />
-
-            {/* 2. Thông tin tài xế & định danh định dạng sinh trắc AI */}
             <DriverIdentityInfo item={rawItem} />
-
-            {/* 3. Thông tin Vé bến & module kiểm tra thanh toán (Mới tách) */}
             <TicketMatchInfo item={rawItem} />
-
           </Grid>
         </DialogContent>
       </Dialog>
