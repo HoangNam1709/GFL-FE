@@ -43,13 +43,6 @@ export default function VehicleInPage() {
   const [liveFacePreview, setLiveFacePreview] = useState<string>("");
   const [compareResult, setCompareResult] = useState<any>(null);
 
-  // Quản lý Modal gộp: Nhập thông tin xe & Tải ảnh CCCD nối dữ liệu
-  const [isOpenInitModal, setIsOpenInitModal] = useState<boolean>(false);
-  const [detectInput, setDetectInput] = useState({
-    eventUid: '',
-    plateNumber: ''
-  });
-
   // Quản lý trạng thái phiên làm việc (Session) liên kết
   const [sessionStatus, setSessionStatus] = useState<string>("");
 
@@ -70,12 +63,12 @@ export default function VehicleInPage() {
     }
   };
 
-  // Kích hoạt input file chọn ảnh CCCD ẩn
+  // Kích hoạt input file chọn ảnh CCCD ẩn để đăng ký tài xế
   const handleTriggerSelectCccd = () => {
     fileInputRef.current?.click();
   };
 
-  // Xử lý tải ảnh CCCD lên (Hỗ trợ cả 2 trường hợp: Chỉ đăng ký người OR Gán xe theo người)
+  // Xử lý tải ảnh CCCD lên (Chỉ tập trung xử lý đăng ký/định danh người)
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -84,21 +77,10 @@ export default function VehicleInPage() {
     const formData = new FormData();
     formData.append('image', file);
 
-    // Kiểm tra xem người dùng có nhập thông tin xe để gán không (Trường hợp 2)
-    const hasVehicleInfo = detectInput.eventUid.trim() || detectInput.plateNumber.trim();
-
-    if (detectInput.eventUid.trim()) {
-      formData.append('event_uid', detectInput.eventUid.trim());
-    }
-    if (detectInput.plateNumber.trim()) {
-      formData.append('plate_number', detectInput.plateNumber.trim().toUpperCase());
-    }
-
     try {
       setIsLoading(true);
-      setIsOpenInitModal(false); // Đóng modal để hiển thị tiến trình load ở màn hình chính
 
-      // Gửi dữ liệu sang API OCR
+      // Gửi dữ liệu sang API OCR trích xuất thông tin người dùng
       const response = await axios.post(API_URL, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -110,45 +92,36 @@ export default function VehicleInPage() {
         const linkedSession = response.data.linked_session;
 
         // Định danh Event UID nhận về từ hệ thống
-        const receivedEventUid = linkedSession?.event_uid || response.data.event_uid || detectInput.eventUid || "";
+        const receivedEventUid = linkedSession?.event_uid || response.data.event_uid || "";
 
         setEventUid(receivedEventUid);
-        setSessionStatus(linkedSession?.status || (hasVehicleInfo ? "READY_TO_COMPARE" : "ONLY_PERSON_REGISTERED"));
+        setSessionStatus(linkedSession?.status || "ONLY_PERSON_REGISTERED");
 
-        // Cập nhật State hiển thị thông tin lên UI
+        // Cập nhật State hiển thị thông tin lên UI chính
         setVehicleData({
           id: ocrData?.id || "Không rõ",
-          // 🌟 SỬA TẠI ĐÂY: Đảm bảo mapping đúng từ key của Backend sang state của Frontend
           name: ocrData?.name || "Không rõ",
           birth: ocrData?.birth || "",
           place: ocrData?.place || "",
 
           nationalId: ocrData?.id || "",
-          driverName: ocrData?.name || "Không rõ", // Dự phòng cho các component con dùng driverName
+          driverName: ocrData?.name || "Không rõ",
           nationalIdImage: imageUrl,
 
-          // Nếu có thông tin xe đi kèm thì ưu tiên map từ session trả về, ngược lại để trống/mặc định
-          licensePlate: linkedSession?.expected_plate_number || detectInput.plateNumber.trim().toUpperCase() || (hasVehicleInfo ? "30A-123.48" : "CHƯA GẮN XE"),
+          // Luồng này mặc định lấy từ session liên kết hiện tại nếu có, không có thì ghi nhận chưa gắn xe
+          licensePlate: linkedSession?.expected_plate_number || "CHƯA GẮN XE",
           licensePlateImage: "http://127.0.0.1:8000/static/media/live_plate.jpg",
-          driverFaceImage: ocrData?.cccd_face_image_url || "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAV1BMVEX6+vqPj4////+Li4u5ubn8/PyIiIiFhYWJiYnk5OShoaGnp6fT09Pn5+eRkZHu7u7Z2dn19fXCwsKamprHx8exsbHOzs7X19eurq6/v7+jo6Pe3t6WlpZaNtXmAAAE3UlEQVR4nO2d25aqOhBFsUIRbgqI4AX//zsP0fa0vUfbBoKm4ljzpfvROapIIGSFKAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIEWamG+P/vn/Owhi5Juu3XZHnp6Lblutm1PT9q5aDKRriVulEqZVBqUSr9pjxh0gyrWOlr273KL05Vh/gyDTkv+jdJIsscEemrNUP9K7oU0W+f6UD1Bz+9rs4xuEOrFSrR/15T7rJwiwjU/y8gF9l3IWoyHxKLAVHxS68AYej1qZDbyRFaIocbaYIjhNHHlajTqygIS2CUqRiquDYqHFAinS0H2S+0WUwijzYThP/KFahjDY8vUWvtIEUkeK5hkkYMz9X83rUoJsQ+pTy2YIrFcJ4ytn8EoZRRCocBEMoostVeFH0LfAUOs4dSK8kpfQ2pbOT4Gp1Et6mvHZr0vEOXPhYQ7vU0TCphRueHAXFj6bsKij95pSrOY9N/xQxktymPLgbJqKfobh3HWhGw0GyIW3d5vuLoeg5f/6j4TdpL9qwczdUoh+DYWhDuhPdpY5PFhdD2dfhboGxdC/ZkMsFZvxMtOH64+9pGnfDjWTBBR7xxT/ku08XqejpcGzTvWub6rXsLnW/EIVfhu7LGNIXMdxnRC16NjRw5FZD2as0F9xuTWU//l7hxmVNeCO/hKaI89dqdAAljBxe4wdxFRp4P7dPpc/2/zNnv5AhFT8X3uBonuE5FMG57/IT4e/VfkDldEU9hFPCyCx+T1XU+6AEzaw4TVH3gQmaZbcpisFV0DDlWkzD3K1Pa8ud0EnbBClotut3NmXUx9B2sd9B2fmZo86DjgVFTOXmr4d+fa4DLuAV4rJ9EF5TOg/fz2ACiBud/rRUiT5vPyF+eIWJ1v3hnGidGMY/566sPione00CR1U21HU9rCs2YWffP+kV8A3fPwQAAIAP7k/1WApJkwpTM/THeFmOfRYJuelhGgo13nYuTaJX3VqCI1W5awDhIUof/K+hzlkZneKY+F7Bmb4uOhXPq3DUv1rQ85t916CaHcrjtegSF51gePDWp1y/o4Q+X5y+p4RjETtPRVxiq6UlnmrovkvPFl9tusS2dTt87SNaInpgh68IBh3eJLhSWxjCcK7h265DX4afP9IsEDa0w1cUaomQkx2+olBLhJwsDT09IrqfEGFt6CkKxY17cNsOb3ujqX2Tobfj+N41mCbeUqVzT56bis+T6t4i6HN/+3va1Gde7z3zhdfd0e4H7jzHb5rN7fg5OzwfUjc3WmGPOvp9NeOW47Iy9P16jXavvf3W/o/+ovyVfeptufsO19Do34IiwmxLnO/1EP8vuQ30sttTJeWIjFcpihE0W/Jf0KhqI0fQbDmZeIz+c9JWxjV4g7lYtlN1LGGz0A+of/jBnOkoJTGMSM1iZdSdzNMhmYbzEiOObkVsZ/sVpv7PDJCdn+wcDfH+UQbIhiByQkzZQc8qpEqSWG5/3sMUlYVOJn5nRieHOpxPzfEoWXcbW0uT8oqHcPS+GH9wVXZ33wT81c18JzCP96F+DfGS5lrvt4d8oy65tTS9bJZOr/k1dc67XV1Foae8Lrv4uamqoS77frfd7nZ9X9ZZ1TQsbEe+E1+Zte+gARJsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACJP/AAFSQ7wNy+LTAAAAAElFTkSuQmCC",
+          driverFaceImage: ocrData?.cccd_face_image_url || "data:image/png;base64,...",
           entryTime: linkedSession?.created_at ? new Date(linkedSession.created_at).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN')
         });
 
-        // Reset form nhập liệu cho phiên làm việc tiếp theo
-        setDetectInput({ eventUid: '', plateNumber: '' });
-
-        if (hasVehicleInfo) {
-          alert("Nối dữ liệu phương tiện và thông tin tài xế thành công!");
-        } else {
-          alert("Quét dữ liệu OCR và đăng ký thông tin người dùng thành công!");
-        }
+        alert("Quét dữ liệu OCR và đăng ký thông tin người dùng thành công!");
       } else {
-        alert(`Không thể trích xuất dữ liệu liên kết. Trạng thái: ${response.data?.status || 'unknown'}`);
+        alert(`Không thể trích xuất dữ liệu đăng ký người. Trạng thái: ${response.data?.status || 'unknown'}`);
       }
     } catch (error: any) {
       console.error("❌ Lỗi chi tiết hệ thống:", error);
       if (error.response) {
-        console.error("Dữ liệu lỗi từ Server trả về:", error.response.data);
         alert(`Server phản hồi lỗi (${error.response.status}): ${error.response.data?.detail || JSON.stringify(error.response.data)}`);
       } else if (error.request) {
         alert("Không thể kết nối đến máy chủ Backend (Network Error / CORS).");
@@ -178,7 +151,7 @@ export default function VehicleInPage() {
       return;
     }
     if (!eventUid) {
-      alert("Không tìm thấy Event UID hợp lệ từ kết quả liên kết trước đó. Vui lòng thực hiện liên kết hoặc điền thông tin xe trước.");
+      alert("Không tìm thấy Event UID hợp lệ từ kết quả định danh trước đó. Vui lòng quét ảnh CCCD để đăng ký người trước.");
       return;
     }
 
@@ -270,9 +243,6 @@ export default function VehicleInPage() {
     setSessionStatus("");
   };
 
-  // Xác định trạng thái người dùng nhập thông tin xe hay không
-  const isVehicleFormFilled = detectInput.eventUid.trim().length > 0 || detectInput.plateNumber.trim().length > 0;
-
   return (
     <Box sx={{ bgcolor: theme.palette.customBg.main, minHeight: '100vh', p: { xs: 2, sm: 3 } }}>
 
@@ -293,13 +263,13 @@ export default function VehicleInPage() {
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h5" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
-              CỔNG VÀO: GIÁM SÁT HÌNH ẢNH REAL-TIME từ CAMERA & CCCD
+              CỔNG VÀO: ĐỊNH DANH SINH TRẮC HỒ SƠ TÀI XẾ KHÔNG KÈM XE
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, ml: 6, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
             <CircularProgress size={14} color="primary" />
             <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-              {sessionStatus ? `Trạng thái: ${sessionStatus}` : "Đang chờ thiết lập liên kết thông tin xe và người lái..."}
+              {sessionStatus ? `Trạng thái phiên: ${sessionStatus}` : "Đang chờ tải ảnh CCCD để thiết lập hồ sơ người lái..."}
             </Typography>
           </Box>
         </Box>
@@ -307,8 +277,8 @@ export default function VehicleInPage() {
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
 
-          <CustomButton variant="contained" startIcon={<AddPhotoAlternateIcon />} onClick={() => setIsOpenInitModal(true)} isLoading={isLoading}>
-            Thêm CCCD
+          <CustomButton variant="contained" startIcon={<AddPhotoAlternateIcon />} onClick={handleTriggerSelectCccd} isLoading={isLoading}>
+            ĐĂNG KÝ NGƯỜI (CCCD)
           </CustomButton>
         </Box>
       </Box>
@@ -317,7 +287,7 @@ export default function VehicleInPage() {
       {!vehicleData ? (
         <Box sx={{ textAlign: 'center', py: { xs: 6, md: 12 }, color: theme.palette.text.secondary }}>
           <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-            Vui lòng bấm nút "Thêm CCCD", điền thông tin định danh xe hoặc tải trực tiếp tệp ảnh CCCD để đăng ký.
+            Vui lòng bấm nút "Đăng ký người (CCCD)" để tải tệp ảnh chứng minh/căn cước công dân và trích xuất thông tin.
           </Typography>
         </Box>
       ) : (
@@ -338,7 +308,7 @@ export default function VehicleInPage() {
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, mb: 2, gap: 2 }}>
             <CustomButton
               variant="contained" size="large" startIcon={<VerifiedUserIcon />} onClick={() => setIsOpenCompareModal(true)}
-              disabled={!eventUid} // Khóa đối sánh nếu không có mã sự kiện xe liên kết
+              disabled={!eventUid}
               sx={{
                 fontWeight: 'bold', px: 3, py: 1.8, fontSize: '16px',
                 bgcolor: theme.palette.primary.main, color: '#ffffff !important',
@@ -365,63 +335,6 @@ export default function VehicleInPage() {
       <Box sx={{ mt: 2 }}>
         <HistoryLog history={printHistory} />
       </Box>
-
-      {/* FORM GỘP: HỖ TRỢ CẢ ĐĂNG KÝ NGƯỜI LẪN ĐỒNG BỘ XE */}
-      <Dialog open={isOpenInitModal} onClose={() => setIsOpenInitModal(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-          HỒ SƠ ĐỒNG BỘ (CỔNG VÀO)
-        </DialogTitle>
-        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
-            TRƯỜNG HỢP A: ĐỊNH DANH PHƯƠNG TIỆN (GẮN XE VÀO NGƯỜI)
-          </Typography>
-
-          <TextField
-            label="Mã sự kiện xe (Event UID)"
-            variant="outlined"
-            fullWidth
-            placeholder="Ví dụ: LPR-9c02f1a27f6b"
-            value={detectInput.eventUid}
-            onChange={(e) => setDetectInput({ ...detectInput, eventUid: e.target.value })}
-          />
-          <TextField
-            label="Biển số xe"
-            variant="outlined"
-            fullWidth
-            placeholder="Ví dụ: 30A12348"
-            value={detectInput.plateNumber}
-            onChange={(e) => setDetectInput({ ...detectInput, plateNumber: e.target.value })}
-            slotProps={{ input: { style: { textTransform: 'uppercase' } } }}
-          />
-
-          <Box sx={{ borderTop: `1px dashed ${theme.palette.divider}`, pt: 2, mt: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1.5, color: 'text.primary' }}>
-              TRƯỜNG HỢP B: ĐĂNG KÝ HỒ SƠ TÀI XẾ KHÔNG KÈM XE / HOẶC HOÀN TẤT ĐỒNG BỘ
-            </Typography>
-            <Button
-              variant="contained"
-              color={isVehicleFormFilled ? "primary" : "secondary"}
-              fullWidth
-              startIcon={<CloudUploadIcon />}
-              onClick={handleTriggerSelectCccd}
-              sx={{ py: 1.5, color: '#ffffff !important', fontWeight: 'bold' }}
-            >
-              {isVehicleFormFilled ? "CHỌN ẢNH CCCD & ĐỒNG BỘ XE" : "CHỌN ẢNH CCCD (CHỈ ĐĂNG KÝ NGƯỜI)"}
-            </Button>
-
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, fontStyle: 'italic' }}>
-              * Gợi ý: Hệ thống cho phép tải trực tiếp ảnh CCCD để lấy thông tin cá nhân mà không cần nhập các trường phương tiện ở trên.
-            </Typography>
-          </Box>
-
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button variant="outlined" color="inherit" onClick={() => setIsOpenInitModal(false)} fullWidth>
-            HỦY BỎ
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* POPUP FORM ĐỐI SÁNH XÁC THỰC */}
       <Dialog open={isOpenCompareModal} onClose={() => setIsOpenCompareModal(false)} maxWidth="md" fullWidth>
