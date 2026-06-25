@@ -13,7 +13,7 @@ import type { XitecLog } from '../../types/vehicle';
 import CccdInfo from './components/CccdInfo';
 import CameraInfo from './components/CameraInfo';
 import HistoryLog from './components/HistoryLog';
-import FaceCompareModal from './components/FaceCompareModal';
+import FaceCompareModal from '../../components/FaceCompareModal';
 import CustomButton from '../../components/CustomButton';
 
 const API_URL = "http://127.0.0.1:8000/ocr/cccd";

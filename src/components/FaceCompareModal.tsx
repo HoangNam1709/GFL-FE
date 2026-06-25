@@ -16,7 +16,12 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import axios from 'axios';
-import type { XitecLog } from '../../../types/vehicle';
+import type { XitecLog } from '../types/vehicle';
+
+interface ImageState {
+  file: File | null;
+  preview: string;
+}
 
 interface FaceCompareModalProps {
   open: boolean;
@@ -24,11 +29,19 @@ interface FaceCompareModalProps {
   vehicleData: XitecLog | null;
   eventUid: string;
   onCompareSuccess: () => void;
+  defaultLiveFace?: ImageState;
 }
 
 const API_COMPARE_URL = "http://127.0.0.1:8000/api/v1/face/compare";
 
-export default function FaceCompareModal({ open, onClose, vehicleData, eventUid, onCompareSuccess }: FaceCompareModalProps) {
+export default function FaceCompareModal({ 
+  open, 
+  onClose, 
+  vehicleData, 
+  eventUid, 
+  onCompareSuccess,
+  defaultLiveFace 
+}: FaceCompareModalProps) {
   const theme = useTheme();
   const liveFaceInputRef = useRef<HTMLInputElement>(null);
   
@@ -37,16 +50,33 @@ export default function FaceCompareModal({ open, onClose, vehicleData, eventUid,
   const [liveFacePreview, setLiveFacePreview] = useState<string>("");
   const [compareResult, setCompareResult] = useState<any>(null);
 
+  // Đồng bộ ảnh từ defaultLiveFace vào state khi modal được mở
+  useEffect(() => {
+    if (open && defaultLiveFace?.file) {
+      setLiveFaceFile(defaultLiveFace.file);
+      setLiveFacePreview(defaultLiveFace.preview);
+    } else if (!open) {
+      // Reset kết quả khi đóng modal để lần sau mở lại sạch sẽ
+      setCompareResult(null);
+    }
+  }, [open, defaultLiveFace]);
+
+  // Cleanup ObjectURL khi thay đổi ảnh hoặc unmount để tránh rò rỉ bộ nhớ
   useEffect(() => {
     return () => {
-      if (liveFacePreview) URL.revokeObjectURL(liveFacePreview);
+      // Chỉ revoke nếu ảnh preview tự tạo trong modal (khác với ảnh từ prop truyền vào)
+      if (liveFacePreview && liveFacePreview !== defaultLiveFace?.preview) {
+        URL.revokeObjectURL(liveFacePreview);
+      }
     };
-  }, [liveFacePreview]);
+  }, [liveFacePreview, defaultLiveFace]);
 
   const handleLiveFaceChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (liveFacePreview) URL.revokeObjectURL(liveFacePreview);
+      if (liveFacePreview && liveFacePreview !== defaultLiveFace?.preview) {
+        URL.revokeObjectURL(liveFacePreview);
+      }
       setLiveFaceFile(file);
       setLiveFacePreview(URL.createObjectURL(file));
     }
@@ -113,7 +143,7 @@ export default function FaceCompareModal({ open, onClose, vehicleData, eventUid,
             <Box sx={{ textAlign: 'center', width: '100%' }}>
               <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>Ảnh thực tế (Live Face)</Typography>
               <Box onClick={() => liveFaceInputRef.current?.click()} sx={{ width: '150px', height: '180px', border: `2px dashed ${theme.palette.primary.main}`, borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', bgcolor: 'action.hover' }}>
-                {liveFacePreview ? <img src={liveFacePreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <CloudUploadIcon color="primary" />}
+                {liveFacePreview ? <img src={liveFacePreview} alt="Live Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <CloudUploadIcon color="primary" />}
               </Box>
               <input type="file" accept="image/*" ref={liveFaceInputRef} style={{ display: 'none' }} onChange={handleLiveFaceChange} />
             </Box>
