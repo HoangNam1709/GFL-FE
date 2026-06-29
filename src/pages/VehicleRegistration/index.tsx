@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { ChangeEvent, FormEvent} from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import {
   Box, Typography, TextField, Card, CardContent, useTheme,
   InputAdornment, Divider, IconButton, Button
@@ -14,7 +14,6 @@ import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PrintIcon from '@mui/icons-material/Print';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { CheckCircleOutlined as CheckCircleOutlineIcon } from '@mui/icons-material';
 import axios from 'axios';
@@ -26,11 +25,13 @@ import DriverIdentityModal from './components/DriverIdentityModal';
 import FaceCompareModal from '../../components/FaceCompareModal';
 import type { XitecLog } from '../../types/vehicle';
 
+import ToastNotification, { type ToastState } from '../../components/ToastNotification';
+
 interface ImageState { file: File | null; preview: string; }
 
 export default function VehicleRegistrationPage() {
   const theme = useTheme();
-  
+
   // State quản lý luồng dữ liệu chính
   const [vehicleData, setVehicleData] = useState<XitecLog | null>(null);
   const [eventUid, setEventUid] = useState<string>("");
@@ -47,6 +48,17 @@ export default function VehicleRegistrationPage() {
   const [images, setImages] = useState<{ plate: ImageState; vehicle: ImageState; face: ImageState }>({
     plate: { file: null, preview: '' }, vehicle: { file: null, preview: '' }, face: { file: null, preview: '' }
   });
+  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  // Hàm tiện ích hiển thị nhanh thông báo
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   const plateInputRef = useRef<HTMLInputElement>(null);
   const vehicleInputRef = useRef<HTMLInputElement>(null);
@@ -80,21 +92,49 @@ export default function VehicleRegistrationPage() {
 
   // Nút Back
   const handleBackToRegistration = () => {
+    // 1. Giải phóng các URL preview cũ để tránh rò rỉ bộ nhớ (Memory Leak)
+    if (images.plate.preview) URL.revokeObjectURL(images.plate.preview);
+    if (images.vehicle.preview) URL.revokeObjectURL(images.vehicle.preview);
+    if (images.face.preview) URL.revokeObjectURL(images.face.preview);
+
+    // 2. Clear thông tin luồng chính
     setVehicleData(null);
     setSessionStatus("");
     setEventUid("");
+
+    // 3. Clear toàn bộ dữ liệu text input trong form
+    setFormData({
+      licensePlate: '',
+      ticketType: 'Thang',
+      ownerName: '',
+      ownerId: '',
+      ownerPhone: '',
+      notes: ''
+    });
+
+    // 4. Clear trạng thái lỗi validation
+    setErrors({
+      licensePlate: ''
+    });
+
+    // 5. Clear toàn bộ file và ảnh preview đã chọn
+    setImages({
+      plate: { file: null, preview: '' },
+      vehicle: { file: null, preview: '' },
+      face: { file: null, preview: '' }
+    });
   };
 
   // Bước 1: Submit Form Xe lên hệ thống LPR bốt
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!formData.licensePlate.trim()) return setErrors({ licensePlate: 'Biển số xe không được để trống!' });
-    if (!images.plate.file || !images.vehicle.file) return alert("Vui lòng tải lên Ảnh Biển Số và Ảnh Toàn Xe!");
+    if (!images.plate.file || !images.vehicle.file) return showToast("Vui lòng tải lên ảnh biển số và ảnh toàn xe", "warning");
 
     try {
       setIsLoading(true);
       const formDataToSend = new FormData();
-      formDataToSend.append('event_uid', ''); 
+      formDataToSend.append('event_uid', '');
       formDataToSend.append('plate_number', formData.licensePlate);
       formDataToSend.append('plate_image', images.plate.file);
       formDataToSend.append('frame_image', images.vehicle.file);
@@ -108,10 +148,10 @@ export default function VehicleRegistrationPage() {
         setEventUid(receivedData.event_uid || response.data?.event_uid || '');
         setIsOpenPersonModal(true); // Sang tiếp Bước 2 mở popup định danh
       } else {
-        alert(response.data?.message || "Đăng ký xe thất bại.");
+        showToast(response.data?.message || "Đăng ký xe thất bại.", "error");
       }
     } catch (error) {
-      alert("Không thể kết nối đến máy chủ API bốt xe!");
+      showToast("Không thể kết nối đến máy chủ", "error");
     } finally {
       setIsLoading(false);
     }
@@ -209,11 +249,10 @@ export default function VehicleRegistrationPage() {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
             <Button variant="outlined" color="inherit" startIcon={<ArrowBackIcon />} onClick={handleBackToRegistration} sx={{ fontWeight: 'bold', border: `1px solid ${theme.palette.divider}` }}>QUAY LẠI FORM ĐĂNG KÝ</Button>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <CustomButton variant="contained" size="large" startIcon={<VerifiedUserIcon />} onClick={() => setIsOpenCompareModal(true)} disabled={!eventUid} sx={{ fontWeight: 'bold', px: 3, py: 1.5, color: '#fff !important' }}>XÁC THỰC KHUÔN MẶT</CustomButton>
               <CustomButton variant="contained" size="large" startIcon={<PrintIcon />} onClick={(e) => e.preventDefault()} disabled={sessionStatus !== "SUCCESS_MATCH"} sx={{ fontWeight: 'bold', px: 4, py: 1.5, bgcolor: 'success.main', color: '#ffffff' }}>XÁC NHẬN & IN THẺ VÀO</CustomButton>
             </Box>
           </Box>
-          <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><CheckCircleOutlineIcon color="success"/> KẾT QUẢ ĐỒNG BỘ DỮ LIỆU TỪ HỆ THỐNG OCR & BIOMETRIC</Typography>
+          <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><CheckCircleOutlineIcon color="success" /> KẾT QUẢ ĐỒNG BỘ DỮ LIỆU TỪ HỆ THỐNG OCR & BIOMETRIC</Typography>
           <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
             <Box sx={{ flex: { xs: '1 1 100%', lg: '0 0 calc(33.33% - 16px)' } }}><CccdInfo data={vehicleData} onUpdateField={(f, v) => setVehicleData(prev => prev ? { ...prev, [f]: v } : null)} /></Box>
             <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 16px)' } }}><CameraInfo data={vehicleData} /></Box>
@@ -229,7 +268,14 @@ export default function VehicleRegistrationPage() {
         licensePlate={formData.licensePlate}
         ownerId={formData.ownerId}
         ownerName={formData.ownerName}
-        onOcrSuccess={(data, status) => { setVehicleData(data); setSessionStatus(status); }}
+        onOcrSuccess={(data, status) => {
+          setVehicleData(data);
+          setSessionStatus(status);
+
+          setIsOpenPersonModal(false);     // Tự động đóng Modal định danh CCCD
+          setIsOpenCompareModal(true);     // Tự động kích hoạt bật thẳng Face Compare popup
+          showToast("Đồng bộ định danh thành công! Đang chuyển hướng xác thực khuôn mặt sinh trắc học.", "success");
+        }}
       />
 
       {/* POPUP BƯỚC 3: ĐỐI SÁNH XÁC THỰC KHUÔN MẶT */}
@@ -238,8 +284,16 @@ export default function VehicleRegistrationPage() {
         onClose={() => setIsOpenCompareModal(false)}
         vehicleData={vehicleData}
         eventUid={eventUid}
-        onCompareSuccess={() => setSessionStatus("SUCCESS_MATCH")}
+        onCompareSuccess={() => {
+          setSessionStatus("SUCCESS_MATCH");
+          showToast("Xác thực khuôn mặt trùng khớp thành công!", "success"); // 🌟 Hiện thông báo khi so khớp mặt thành công
+        }}
         defaultLiveFace={images.face.file ? images.face : undefined}
+      />
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Box>
   );

@@ -20,6 +20,7 @@ import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import CancelIcon from '@mui/icons-material/Cancel';
 import axios from 'axios';
 import type { XitecLog } from '../../../types/vehicle';
+import ToastNotification, { type ToastState } from '../../../components/ToastNotification';
 
 interface DriverIdentityModalProps {
   open: boolean;
@@ -36,8 +37,6 @@ export default function DriverIdentityModal({
   onClose,
   eventId,
   licensePlate,
-  ownerId,
-  ownerName,
   onOcrSuccess
 }: DriverIdentityModalProps) {
   const theme = useTheme();
@@ -47,6 +46,17 @@ export default function DriverIdentityModal({
   const [barcode, setBarcode] = useState<string>('');
   const [cccdFile, setCccdFile] = useState<File | null>(null);
   const [cccdPreview, setCccdPreview] = useState<string>('');
+  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  // Hàm tiện ích hiển thị nhanh thông báo
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   useEffect(() => {
     return () => {
@@ -70,7 +80,7 @@ export default function DriverIdentityModal({
   };
 
   const handlePersonSubmit = async () => {
-    if (!cccdFile) return alert("Vui lòng tải lên file ảnh CCCD tài xế!");
+    if (!cccdFile) return showToast("Vui lòng tải lên file ảnh CCCD tài xế!","warning");
 
     try {
       setPersonLoading(true);
@@ -101,14 +111,14 @@ export default function DriverIdentityModal({
           entryTime: linkedSession?.created_at ? new Date(linkedSession.created_at).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN')
         };
 
-        alert("Liên kết định danh sinh trắc CCCD và thông tin xe thành công!");
+        showToast("Liên kết định danh sinh trắc CCCD và thông tin xe thành công!","success");
         onOcrSuccess(updatedVehicleData, linkedSession?.status || "READY_TO_COMPARE");
         onClose();
       } else {
-        alert(response.data?.message || "Không thể trích xuất dữ liệu OCR CCCD.");
+        showToast(response.data?.message || "Không thể trích xuất dữ liệu OCR CCCD.","error");
       }
     } catch (err) {
-      alert("Thất bại khi kết nối đến máy chủ xử lý dữ liệu sinh trắc OCR.");
+      showToast("Thất bại khi kết nối đến máy chủ xử lý dữ liệu sinh trắc OCR.","error");
     } finally {
       setPersonLoading(false);
     }
@@ -125,8 +135,6 @@ export default function DriverIdentityModal({
       </DialogTitle>
       <DialogContent dividers sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField label="Mã chủ xe" fullWidth disabled value={ownerId} />
-          <TextField label="Tên chủ xe (Hồ sơ)" fullWidth disabled value={ownerName} />
         </Box>
         <TextField label="Event UID tự động" fullWidth disabled value={eventId} />
         <TextField
@@ -159,6 +167,11 @@ export default function DriverIdentityModal({
           {personLoading ? "ĐANG XỬ LÝ OCR..." : "LIÊN KẾT ĐỊNH DANH HỆ THỐNG"}
         </Button>
       </DialogActions>
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </Dialog>
   );
 }

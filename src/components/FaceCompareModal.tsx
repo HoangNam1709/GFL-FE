@@ -34,17 +34,17 @@ interface FaceCompareModalProps {
 
 const API_COMPARE_URL = "http://127.0.0.1:8000/api/v1/face/compare";
 
-export default function FaceCompareModal({ 
-  open, 
-  onClose, 
-  vehicleData, 
-  eventUid, 
+export default function FaceCompareModal({
+  open,
+  onClose,
+  vehicleData,
+  eventUid,
   onCompareSuccess,
-  defaultLiveFace 
+  defaultLiveFace
 }: FaceCompareModalProps) {
   const theme = useTheme();
   const liveFaceInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [liveFaceFile, setLiveFaceFile] = useState<File | null>(null);
   const [liveFacePreview, setLiveFacePreview] = useState<string>("");
@@ -140,12 +140,13 @@ export default function FaceCompareModal({
               <img src={vehicleData?.driverFaceImage} alt="CCCD Face" style={{ width: '150px', height: '180px', objectFit: 'cover', borderRadius: '4px' }} />
             </Box>
 
-            <Box sx={{ textAlign: 'center', width: '100%' }}>
+            <Box sx={{ textAlign: 'center', width: '100%'}}>
               <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>Ảnh thực tế (Live Face)</Typography>
-              <Box onClick={() => liveFaceInputRef.current?.click()} sx={{ width: '150px', height: '180px', border: `2px dashed ${theme.palette.primary.main}`, borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', bgcolor: 'action.hover' }}>
+              <Box onClick={() => liveFaceInputRef.current?.click()} sx={{margin: 'auto' , width: '150px', height: '180px', border: `2px dashed ${theme.palette.primary.main}`, borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', bgcolor: 'action.hover' }}>
                 {liveFacePreview ? <img src={liveFacePreview} alt="Live Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <CloudUploadIcon color="primary" />}
+
+                <input type="file" accept="image/*" ref={liveFaceInputRef} style={{ display: 'none' }} onChange={handleLiveFaceChange} />
               </Box>
-              <input type="file" accept="image/*" ref={liveFaceInputRef} style={{ display: 'none' }} onChange={handleLiveFaceChange} />
             </Box>
           </Box>
         </Box>

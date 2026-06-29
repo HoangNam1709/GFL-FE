@@ -15,6 +15,7 @@ import CameraInfo from './components/CameraInfo';
 import HistoryLog from './components/HistoryLog';
 import FaceCompareModal from '../../components/FaceCompareModal';
 import CustomButton from '../../components/CustomButton';
+import ToastNotification, { type ToastState } from '../../components/ToastNotification';
 
 const API_URL = "http://127.0.0.1:8000/ocr/cccd";
 
@@ -26,9 +27,21 @@ export default function VehicleInPage() {
   const [sessionStatus, setSessionStatus] = useState<string>("");
   const [isOpenCompareModal, setIsOpenCompareModal] = useState<boolean>(false);
 
+  // State quản lý thông báo dùng chung
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
   const Navigate = useNavigate();
+
+  // Hàm tiện ích để đổi trạng thái toast nhanh
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   const handleUpdateVehicleField = (field: keyof XitecLog, value: string) => {
     if (vehicleData) setVehicleData({ ...vehicleData, [field]: value });
@@ -45,11 +58,25 @@ export default function VehicleInPage() {
     try {
       setIsLoading(true);
       const response = await axios.post(API_URL, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      
+      // 🌟 ĐÃ SỬA: Đổi từ alert() sang component thông báo showToast dùng chung
+      if (response.data && response.data.status === "DUPLICATE_CCCD_IMAGE") {
+        showToast("Ảnh CCCD này đã được xử lý trong một phiên làm việc đang kích hoạt!", "warning");
+
+        // Nếu Backend trả về dữ liệu session cũ trong trường hợp trùng, ta vẫn trích xuất để làm việc tiếp
+        const sessionData = response.data.data?.session || response.data.data;
+        if (sessionData) {
+          return;
+        }
+        return;
+      }
 
       if (response.data?.status === "SUCCESS") {
         const ocrData = response.data.data;
         const linkedSession = response.data.linked_session;
-        setEventUid(linkedSession?.event_uid || response.data.event_uid || "");
+        const currentEventUid = linkedSession?.event_uid || response.data.event_uid || "";
+
+        setEventUid(currentEventUid);
         setSessionStatus(linkedSession?.status || "ONLY_PERSON_REGISTERED");
 
         setVehicleData({
@@ -65,10 +92,16 @@ export default function VehicleInPage() {
           driverFaceImage: ocrData?.cccd_face_image_url || "data:image/png;base64,...",
           entryTime: linkedSession?.created_at ? new Date(linkedSession.created_at).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN')
         });
-        alert("Đăng ký thông tin tài xế thành công!");
+        
+        showToast("Định danh tài xế thành công!", "success");
+        
+        // TỰ ĐỘNG KHÍCH HOẠT: Mở luôn modal đối sánh khuôn mặt sau khi OCR thành công
+        if (currentEventUid) {
+          setIsOpenCompareModal(true);
+        }
       }
     } catch (error) {
-      alert("Lỗi kết nối máy chủ khi xử lý OCR.");
+      showToast("Lỗi kết nối máy chủ khi xử lý OCR.", "error");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
       setIsLoading(false);
@@ -79,12 +112,13 @@ export default function VehicleInPage() {
     e.preventDefault();
     if (!vehicleData) return;
 
-    // Giao diện HTML In ấn giữ nguyên (Có thể đưa vào helper function nếu muốn tối ưu sâu thêm)
-    const printHtml = `<html>...</html>`; 
+    const printHtml = `<html>...</html>`;
     const w = window.open('', '_blank');
     if (w) { w.document.write(printHtml); w.document.close(); setTimeout(() => w.print(), 300); }
 
     setPrintHistory([`[IN THẺ] Xe: ${vehicleData.licensePlate} - Tài xế: ${vehicleData.name}`, ...printHistory]);
+    
+    showToast("Đã in thẻ và xác nhận cho xe vào bãi!", "success");
     setVehicleData(null); setEventUid(""); setSessionStatus("");
   };
 
@@ -126,12 +160,21 @@ export default function VehicleInPage() {
       <Box sx={{ mt: 2 }}><HistoryLog history={printHistory} /></Box>
 
       {/* MODAL ĐỐI SÁNH ĐÃ ĐƯỢC TÁCH */}
-      <FaceCompareModal 
-        open={isOpenCompareModal} 
-        onClose={() => setIsOpenCompareModal(false)} 
-        vehicleData={vehicleData} 
-        eventUid={eventUid} 
-        onCompareSuccess={() => setSessionStatus("SUCCESS_MATCH")} 
+      <FaceCompareModal
+        open={isOpenCompareModal}
+        onClose={() => setIsOpenCompareModal(false)}
+        vehicleData={vehicleData}
+        eventUid={eventUid}
+        onCompareSuccess={() => {
+          setSessionStatus("SUCCESS_MATCH");
+          showToast("Xác thực khuôn mặt trùng khớp thành công!", "success"); // 🌟 Hiện thông báo khi so khớp mặt thành công
+        }}
+      />
+
+      {/* COMPONENT THÔNG BÁO HIỂN THỊ DÙNG CHUNG */}
+      <ToastNotification 
+        toast={toast} 
+        onClose={() => setToast({ ...toast, open: false })} 
       />
     </Box>
   );

@@ -9,8 +9,6 @@ import NotFoundPage from '../pages/NotFound/NotFound';
 import PermissionPage from '../pages/Permission/Permission';
 import UserManagementPage from '../pages/AccountManagement/UserManagementPage';
 import VehicleOutPage from '../pages/VehicleOut';
-
-// IMPORT THÊM 2 FILE NÀY:
 import LoginPage from '../pages/LoginPage/LoginPage'; 
 import ProtectedRoute from '../components/ProtectRoute';
 

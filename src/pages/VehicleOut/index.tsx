@@ -1,3 +1,4 @@
+// VehicleOutPage.tsx
 import { useState } from 'react';
 import {
   Box,
@@ -27,6 +28,8 @@ import { useNavigate } from 'react-router-dom';
 
 import CccdInfo from '../VehicleIn/components/CccdInfo';
 import CameraInfo from '../VehicleIn/components/CameraInfo';
+// 🌟 IMPORT COMPONENT THÔNG BÁO DÙNG CHUNG
+import ToastNotification, { type ToastState } from '../../components/ToastNotification';
 
 // Định nghĩa Interface cho một dòng lịch sử đầy đủ
 interface CheckoutHistoryLog {
@@ -46,7 +49,7 @@ export default function VehicleOutPage() {
   const [vehicleData, setVehicleData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  // 🌟 CẬP NHẬT: State lưu lịch sử dạng Object để giữ cả thời gian Vào + Ra
+  // State lưu lịch sử dạng Object để giữ cả thời gian Vào + Ra
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryLog[]>([]);
 
   const [isOpenInitModal, setIsOpenInitModal] = useState<boolean>(true);
@@ -55,10 +58,24 @@ export default function VehicleOutPage() {
     ticketCode: ''
   });
 
+  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  // Hàm tiện ích hiển thị nhanh thông báo
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
+
   const handleFinalCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 🌟 ĐÃ SỬA: Đổi sang dùng showToast cảnh báo bỏ trống form
     if (!exitInput.eventUid.trim() && !exitInput.ticketCode.trim()) {
-      alert("Vui lòng nhập Mã sự kiện hoặc quét mã vé!");
+      showToast("Vui lòng nhập Mã sự kiện hoặc quét mã vé!", "warning");
       return;
     }
 
@@ -98,25 +115,29 @@ export default function VehicleOutPage() {
         };
 
         setVehicleData(mappedData);
-        alert("Xác thực thông tin cổng ra THÀNH CÔNG! Mở barrier cho xe xuất bến.");
+        
+        // 🌟 ĐÃ SỬA: Đổi sang dùng showToast thông báo thành công xuất bến
+        showToast("Xác thực thông tin thành công! Mở barrier cho xe xuất bến.", "success");
 
-        // 🌟 CẬP NHẬT: Đẩy toàn bộ thông tin phiên (Gồm cả checkin từ BE và checkout hiện tại) vào bảng lịch sử
+        // Đẩy toàn bộ thông tin phiên vào bảng lịch sử
         const newLog: CheckoutHistoryLog = {
           sessionId: sessionInfo?.session_id || `SS-${Date.now()}`,
           name: mappedData.name,
           licensePlate: mappedData.licensePlate,
-          checkinTime: sessionInfo?.checked_in_at || "N/A", // Lấy từ DB gốc của BE trả về
-          checkoutTime: sessionInfo?.checked_out_at || new Date().toLocaleString('vi-VN') // Thời gian ra thực tế
+          checkinTime: sessionInfo?.checked_in_at || "N/A",
+          checkoutTime: sessionInfo?.checked_out_at || new Date().toLocaleString('vi-VN')
         };
 
         setCheckoutHistory([newLog, ...checkoutHistory]);
         setIsOpenInitModal(false); 
       } else {
-        alert(`Từ chối xuất bến: ${response.data?.message || 'Lỗi đối soát hệ thống'}`);
+        // 🌟 ĐÃ SỬA: Đổi sang dùng showToast thông báo bị hệ thống từ chối
+        showToast(`Từ chối xuất bến: ${response.data?.message || 'Lỗi đối soát hệ thống'}`, "error");
       }
     } catch (error: any) {
       console.error(error);
-      alert(`Lỗi hệ thống: ${error.response?.data?.detail || "Không thể kết nối Backend"}`);
+      // 🌟 ĐÃ SỬA: Đổi sang dùng showToast báo lỗi kết nối hoặc lỗi Backend
+      showToast(`Lỗi hệ thống: ${error.response?.data?.detail || "Không thể kết nối Backend"}`, "error");
     } finally {
       setIsLoading(false);
     }
@@ -158,7 +179,7 @@ export default function VehicleOutPage() {
         </Box>
       )}
 
-      {/* 🌟 CẬP NHẬT: HIỂN THỊ BẢNG LỊCH SỬ PHIÊN RA VÀO TOÀN DIỆN */}
+      {/* HIỂN THỊ BẢNG LỊCH SỬ PHIÊN RA VÀO TOÀN DIỆN */}
       <Box sx={{ mt: 5 }}>
         <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
           NHẬT KÝ PHIÊN XE XUẤT BẾN TRONG CA
@@ -245,6 +266,11 @@ export default function VehicleOutPage() {
           </DialogActions>
         </form>
       </Dialog>
+
+      <ToastNotification 
+        toast={toast} 
+        onClose={() => setToast({ ...toast, open: false })} 
+      />
     </Box>
   );
 }
