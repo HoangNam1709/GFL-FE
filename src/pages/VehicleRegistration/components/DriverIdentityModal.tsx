@@ -1,4 +1,3 @@
-// components/DriverIdentityModal.tsx
 import { useState, useRef, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import {

@@ -9,20 +9,34 @@ import NotFoundPage from '../pages/NotFound/NotFound';
 import PermissionPage from '../pages/Permission/Permission';
 import UserManagementPage from '../pages/AccountManagement/UserManagementPage';
 import VehicleOutPage from '../pages/VehicleOut';
+
+// IMPORT THÊM 2 FILE NÀY:
+import LoginPage from '../pages/LoginPage/LoginPage'; 
+import ProtectedRoute from '../components/ProtectRoute';
+
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Tất cả các trang an ninh đều được bọc bởi SecurityLayout */}
-      <Route element={<SecurityLayout />}>
+      {/* 1. Tuyến đường công khai: Không cần đăng nhập, nằm ngoài SecurityLayout */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* 2. Tuyến đường bảo mật: Bọc ProtectedRoute ở ngoài cùng để bảo vệ tất cả các trang con */}
+      <Route 
+        element={
+          <ProtectedRoute>
+            <SecurityLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route path="/" element={<Navigate to="/camera-overview" replace />} />
         <Route path="/camera-overview" element={<CameraOverviewPage />} />
-        <Route path="/log-history" element={< HistoryLogPage />} />
+        <Route path="/log-history" element={<HistoryLogPage />} />
         <Route path="/vehicle-in" element={<VehicleInPage />} />
         <Route path="/vehicle-out" element={<VehicleOutPage />} />
         <Route path="/register-car" element={<VehicleRegistrationPage />} />
         <Route path="/people-register" element={<UserRegistrationPage />} />
         <Route path="/system-management/permissions" element={<PermissionPage />} />
-        <Route path="/system-management/users-management" element={<UserManagementPage/>} />
+        <Route path="/system-management/users-management" element={<UserManagementPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

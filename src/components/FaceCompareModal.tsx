@@ -101,7 +101,7 @@ export default function FaceCompareModal({
 
       if (compareInfo?.result === "MATCH" || response.data?.status === "SUCCESS") {
         onCompareSuccess();
-        alert("Xác thực khuôn mặt trùng khớp thành công!");
+        // alert("Xác thực khuôn mặt trùng khớp thành công!");
       } else {
         alert(`Đối sánh hoàn tất! Kết quả: ${compareInfo?.result || 'Không khớp'}`);
       }
