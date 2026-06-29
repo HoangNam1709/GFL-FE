@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { 
-  Box, Card, CardContent, TextField, Button, Typography, 
-  Avatar, Alert, CircularProgress, InputAdornment, IconButton 
+import {
+  Box, Card, CardContent, TextField, Button, Typography,
+  Avatar, Alert, CircularProgress, InputAdornment, IconButton,
+  useTheme
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Visibility from '@mui/icons-material/Visibility';
@@ -14,10 +15,10 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const theme = useTheme();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) return setError('Vui lòng điền đầy đủ tài khoản và mật khẩu!');
@@ -36,7 +37,7 @@ export default function LoginPage() {
           username: response.data.username || username,
           role: response.data.role || 'operator'
         });
-        window.location.href = '/vehicle-in'; 
+        window.location.href = '/vehicle-in';
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Đăng nhập thất bại. Vui lòng kiểm tra lại!');
@@ -46,12 +47,12 @@ export default function LoginPage() {
   };
 
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundImage: 'url("https://mianco.com.vn/wp-content/uploads/2020/02/Background-login.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -67,26 +68,26 @@ export default function LoginPage() {
         }
       }}
     >
-      <Card 
-        sx={{ 
-          maxWidth: 420, 
-          width: '100%', 
+      <Card
+        sx={{
+          maxWidth: 420,
+          width: '100%',
           zIndex: 2,
-          background: 'rgba(255, 255, 255, 0.15)', 
+          background: 'rgba(255, 255, 255, 0.15)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: '20px', 
+          borderRadius: '20px',
           border: '1px solid rgba(255, 255, 255, 0.25)',
           boxShadow: '0 12px 40px 0 rgba(0, 0, 0, 0.3)',
         }}
       >
         <CardContent sx={{ p: { xs: 3, sm: 5 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          
+
           <Avatar sx={{ m: 1, bgcolor: '#ffffff', width: 50, height: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
             <LockOutlinedIcon sx={{ color: '#0f2043', fontSize: 26 }} />
           </Avatar>
-          
-          <Typography component="h1" variant="h5" sx={{ fontWeight: 800, color: '#ffffff', mt: 1.5, letterSpacing: '0.5px' }}>
+
+          <Typography component="h1" variant="h5" sx={{ fontWeight: 800, color: '#ffffff', mt: 1.5, letterSpacing: '0.5px', fontFamily: theme.typography.fontFamily }}>
             ĐĂNG NHẬP HỆ THỐNG
           </Typography>
           <Typography variant="body2" sx={{ mb: 4, color: 'rgba(255, 255, 255, 0.75)', fontWeight: 500 }}>
@@ -96,7 +97,7 @@ export default function LoginPage() {
           {error && <Alert severity="error" sx={{ width: '100%', mb: 3, borderRadius: '8px' }}>{error}</Alert>}
 
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            
+
             {/* INPUT USERNAME */}
             <TextField
               required
@@ -117,23 +118,28 @@ export default function LoginPage() {
                   '&.Mui-focused fieldset': { borderColor: '#ffffff' },
                 },
                 // Thiết lập hiệu ứng chuyển động cho Nhãn (Label)
-                '& .MuiInputLabel-root': { 
+                '& .MuiInputLabel-root': {
                   color: 'rgba(255, 255, 255, 0.7)',
                   fontSize: '15px'
                 },
                 // Khi click vào (Focus) hoặc khi có text (Shrink), nhãn tự nảy lên trên viền
-                '& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink': { 
+                '& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink': {
                   color: '#ffffff',
                   fontWeight: 'bold',
                   padding: '0 6px',
                   // Tạo nền mờ tối ngay dưới chữ nhãn để không bị đường viền đâm xuyên qua chữ
-                  backgroundColor: '#27436b00', 
+                  backgroundColor: '#27436b00',
                   borderRadius: '4px',
+                },
+                '& input:-webkit-autofill': {
+                  WebkitBoxShadow: '0 0 0 100px #1a1a1a2c inset !important',borderRadius: '8px', // Thay #1a1a1a bằng màu nền card/form login của bạn
+                  WebkitTextFillColor: '#ffffff !important', // Giữ màu chữ trắng khi autofill
+                  transition: 'background-color 5000s ease-in-out 0s',
                 },
                 marginBottom: '10px',
               }}
             />
-            
+
             {/* INPUT PASSWORD */}
             <TextField
               required
@@ -152,17 +158,22 @@ export default function LoginPage() {
                   '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.7)' },
                   '&.Mui-focused fieldset': { borderColor: '#ffffff' },
                 },
-                '& .MuiInputLabel-root': { 
+                '& .MuiInputLabel-root': {
                   color: 'rgba(255, 255, 255, 0.7)',
                   fontSize: '15px'
                 },
-                '& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink': { 
+                '& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink': {
                   color: '#ffffff',
                   fontWeight: 'bold',
                   padding: '0 6px',
-                  backgroundColor: '#27436b00', 
+                  backgroundColor: '#27436b00',
                   borderRadius: '4px',
-                }
+                },
+                '& input:-webkit-autofill': {
+                  WebkitBoxShadow: '0 0 0 100px #1a1a1a2c inset !important', borderRadius: '8px',
+                  WebkitTextFillColor: '#ffffff !important', // Giữ màu chữ trắng khi autofill
+                  transition: 'background-color 5000s ease-in-out 0s',
+                },
               }}
               slotProps={{
                 input: {
@@ -176,7 +187,7 @@ export default function LoginPage() {
                 }
               }}
             />
-            
+
             {/* NÚT ĐĂNG NHẬP */}
             <Button
               type="submit"
@@ -184,10 +195,10 @@ export default function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
-              sx={{ 
-                mt: 2, 
-                fontWeight: 700, 
-                height: 48, 
+              sx={{
+                mt: 2,
+                fontWeight: 700,
+                height: 48,
                 borderRadius: '8px',
                 backgroundColor: '#ffffff',
                 color: '#0f2043 !important',
