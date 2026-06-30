@@ -32,9 +32,21 @@ export default function VehicleInPage() {
   const [sessionStatus, setSessionStatus] = useState<string>("");
   const [isOpenCompareModal, setIsOpenCompareModal] = useState<boolean>(false);
 
+  // State quản lý thông báo dùng chung
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
   const Navigate = useNavigate();
+
+  // Hàm tiện ích để đổi trạng thái toast nhanh
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   const handleUpdateVehicleField = (field: keyof XitecLog, value: string) => {
     if (vehicleData) setVehicleData({ ...vehicleData, [field]: value });
@@ -59,7 +71,9 @@ export default function VehicleInPage() {
       if (response.data?.status === "SUCCESS") {
         const ocrData = response.data.data;
         const linkedSession = response.data.linked_session;
-        setEventUid(linkedSession?.event_uid || response.data.event_uid || "");
+        const currentEventUid = linkedSession?.event_uid || response.data.event_uid || "";
+
+        setEventUid(currentEventUid);
         setSessionStatus(linkedSession?.status || "ONLY_PERSON_REGISTERED");
 
         setVehicleData({
@@ -79,7 +93,13 @@ export default function VehicleInPage() {
             ? new Date(linkedSession.created_at).toLocaleString("vi-VN")
             : new Date().toLocaleString("vi-VN"),
         });
-        alert("Đăng ký thông tin tài xế thành công!");
+        
+        showToast("Định danh tài xế thành công!", "success");
+        
+        // TỰ ĐỘNG KHÍCH HOẠT: Mở luôn modal đối sánh khuôn mặt sau khi OCR thành công
+        if (currentEventUid) {
+          setIsOpenCompareModal(true);
+        }
       }
     } catch (error: any) {
       console.log("error =", error);

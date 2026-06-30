@@ -21,51 +21,56 @@ declare module '@mui/material/styles' {
 }
 declare module '@mui/material/styles' {
   interface TypeText {
-    textheader?: string; // Khai báo thêm trường tertiary vào hệ thống chữ
+    textheader?: string; 
   }
 }
+
+// 🌟 ĐỊNH NGHĨA FONT CHỮ DÙNG CHUNG CHO CẢ 2 CHẾ ĐỘ MÀU
+const typographyConfig = {
+  fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+  h5: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontWeight: 800,
+  }
+};
 
 // 1. Giao diện sáng (Light Theme) - Cho bốt bảo vệ ban ngày
 export const lightTheme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: '#1976d2' }, // Dùng màu xanh cho light mode
+    primary: { main: '#1976d2' }, 
     text: {
-      primary: '#000000', // Màu chữ đen cho light mode
-      secondary: '#555555', // Màu chữ phụ xám đậm
-      textheader: '#ffff' // Màu chữ phụ trắng sáng cho header
+      primary: '#000000', 
+      secondary: '#555555', 
+      textheader: '#ffff' 
     },
     success: { main: '#2e7d32' },
     customBg: {
-      header: "#1976d2",   // Nền header xanh dương
-      main: '#f8f9fa',   // Nền tổng thể xám nhạt
-      card: '#ffffff',   // Nền Card trắng tinh
-      border: '#e0e0e0'  // Viền xám mảnh
+      header: "#1976d2",   
+      main: '#f8f9fa',   
+      card: '#ffffff',   
+      border: '#e0e0e0'  
     }
-  }
+  },
+  typography: typographyConfig // 🌟 ĐÃ TÍCH HỢP FONT CHỮ VÀO LIGHT MODE
 });
 
-// 2. Giao diện tối (Dark Theme) - Giảm mỏi mắt ban đêm (Màu cũ của bạn)
+// 2. Giao diện tối (Dark Theme) - Giảm mỏi mắt ban đêm
 export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
-    primary: { main: '#ff9900' }, // Vàng cam đặc trưng của bạn
+    primary: { main: '#ff9900' }, 
     text: {
-      primary: '#ffffff', // Màu chữ trắng cho dark mode
-      secondary: '#cccccc', // Màu chữ phụ xám sáng
-      textheader: '#ff9900' // Màu chữ phụ vàng cam đặc trưng cho header
+      primary: '#ffffff', 
+      secondary: '#cccccc', 
+      textheader: '#ff9900' 
     },
     success: { main: '#1b5e20' },
     customBg: {
-      main: '#121212',   // Nền tổng sẫm màu
-      card: '#1a1a1a',   // Nền Card tối đen của bạn
-      border: '#333333'  // Viền tối
+      main: '#121212',   
+      card: '#1a1a1a',   
+      border: '#333333'  
     }
-  }
-});
-
-export const theme = createTheme({
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
   },
+  typography: typographyConfig // 🌟 ĐÃ TÍCH HỢP FONT CHỮ VÀO DARK MODE
 });

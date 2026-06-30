@@ -72,6 +72,17 @@ export default function VehicleRegistrationPage() {
     vehicle: { file: null, preview: "" },
     face: { file: null, preview: "" },
   });
+  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  // Hàm tiện ích hiển thị nhanh thông báo
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   const plateInputRef = useRef<HTMLInputElement>(null);
   const vehicleInputRef = useRef<HTMLInputElement>(null);
@@ -118,9 +129,37 @@ export default function VehicleRegistrationPage() {
 
   // Nút Back
   const handleBackToRegistration = () => {
+    // 1. Giải phóng các URL preview cũ để tránh rò rỉ bộ nhớ (Memory Leak)
+    if (images.plate.preview) URL.revokeObjectURL(images.plate.preview);
+    if (images.vehicle.preview) URL.revokeObjectURL(images.vehicle.preview);
+    if (images.face.preview) URL.revokeObjectURL(images.face.preview);
+
+    // 2. Clear thông tin luồng chính
     setVehicleData(null);
     setSessionStatus("");
     setEventUid("");
+
+    // 3. Clear toàn bộ dữ liệu text input trong form
+    setFormData({
+      licensePlate: '',
+      ticketType: 'Thang',
+      ownerName: '',
+      ownerId: '',
+      ownerPhone: '',
+      notes: ''
+    });
+
+    // 4. Clear trạng thái lỗi validation
+    setErrors({
+      licensePlate: ''
+    });
+
+    // 5. Clear toàn bộ file và ảnh preview đã chọn
+    setImages({
+      plate: { file: null, preview: '' },
+      vehicle: { file: null, preview: '' },
+      face: { file: null, preview: '' }
+    });
   };
 
   // Bước 1: Submit Form Xe lên hệ thống LPR bốt
@@ -160,7 +199,7 @@ export default function VehicleRegistrationPage() {
         setEventUid(receivedData.event_uid || response.data?.event_uid || "");
         setIsOpenPersonModal(true); // Sang tiếp Bước 2 mở popup định danh
       } else {
-        alert(response.data?.message || "Đăng ký xe thất bại.");
+        showToast(response.data?.message || "Đăng ký xe thất bại.", "error");
       }
     } catch (error: any) {
       // Lỗi 401 (nếu còn bị) sẽ lọt vào đây để bạn console.log xem cụ thể, KHÔNG BỊ OUT PHIÊN nữa
@@ -590,8 +629,16 @@ export default function VehicleRegistrationPage() {
         onClose={() => setIsOpenCompareModal(false)}
         vehicleData={vehicleData}
         eventUid={eventUid}
-        onCompareSuccess={() => setSessionStatus("SUCCESS_MATCH")}
+        onCompareSuccess={() => {
+          setSessionStatus("SUCCESS_MATCH");
+          showToast("Xác thực khuôn mặt trùng khớp thành công!", "success"); // 🌟 Hiện thông báo khi so khớp mặt thành công
+        }}
         defaultLiveFace={images.face.file ? images.face : undefined}
+      />
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Box>
   );

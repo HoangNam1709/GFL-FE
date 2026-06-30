@@ -70,7 +70,7 @@ export default function DriverIdentityModal({
   };
 
   const handlePersonSubmit = async () => {
-    if (!cccdFile) return alert("Vui lòng tải lên file ảnh CCCD tài xế!");
+    if (!cccdFile) return showToast("Vui lòng tải lên file ảnh CCCD tài xế!","warning");
 
     // SỬA TẠI ĐÂY: Chủ động lấy token từ localStorage
     const Token = localStorage.getItem("token");
@@ -285,6 +285,11 @@ export default function DriverIdentityModal({
           {personLoading ? "ĐANG XỬ LÝ OCR..." : "LIÊN KẾT ĐỊNH DANH HỆ THỐNG"}
         </Button>
       </DialogActions>
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </Dialog>
   );
 }

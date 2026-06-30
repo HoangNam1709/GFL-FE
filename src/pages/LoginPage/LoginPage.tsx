@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const theme = useTheme();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password)
@@ -115,8 +115,8 @@ export default function LoginPage() {
           >
             ĐĂNG NHẬP HỆ THỐNG
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Hệ thống quản lý & đối sánh xe xitec
+          <Typography variant="body2" sx={{ mb: 4, color: 'rgba(255, 255, 255, 0.75)', fontWeight: 500 }}>
+            Hệ thống quản lý & đối sánh xe ra vào
           </Typography>
 
           {error && (
@@ -127,19 +127,47 @@ export default function LoginPage() {
 
           <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
             <TextField
-              margin="normal"
               required
               fullWidth
-              label="Tài khoản (Username)"
+              label="Username" // Nhãn mặc định hiển thị bên trong ô nhập
               autoComplete="username"
               autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
+              variant="outlined"
+              sx={{
+                // Thiết lập màu chữ và khung viền bao quanh
+                '& .MuiOutlinedInput-root': {
+                  color: '#ffffff', // Chữ gõ vào hiển thị màu trắng rõ nét trên nền tối
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)', borderRadius: '8px' },
+                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.7)' },
+                  '&.Mui-focused fieldset': { borderColor: '#ffffff' },
+                },
+                // Thiết lập hiệu ứng chuyển động cho Nhãn (Label)
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '15px'
+                },
+                // Khi click vào (Focus) hoặc khi có text (Shrink), nhãn tự nảy lên trên viền
+                '& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink': {
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  padding: '0 6px',
+                  // Tạo nền mờ tối ngay dưới chữ nhãn để không bị đường viền đâm xuyên qua chữ
+                  backgroundColor: '#27436b00',
+                  borderRadius: '4px',
+                },
+                '& input:-webkit-autofill': {
+                  WebkitBoxShadow: '0 0 0 100px #1a1a1a2c inset !important',borderRadius: '8px', // Thay #1a1a1a bằng màu nền card/form login của bạn
+                  WebkitTextFillColor: '#ffffff !important', // Giữ màu chữ trắng khi autofill
+                  transition: 'background-color 5000s ease-in-out 0s',
+                },
+                marginBottom: '10px',
+              }}
             />
 
             <TextField
-              margin="normal"
               required
               fullWidth
               label="Mật khẩu"
