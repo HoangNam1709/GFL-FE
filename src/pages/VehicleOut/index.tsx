@@ -28,10 +28,8 @@ import { useNavigate } from 'react-router-dom';
 
 import CccdInfo from '../VehicleIn/components/CccdInfo';
 import CameraInfo from '../VehicleIn/components/CameraInfo';
-// 🌟 IMPORT COMPONENT THÔNG BÁO DÙNG CHUNG
 import ToastNotification, { type ToastState } from '../../components/ToastNotification';
 
-// Định nghĩa Interface cho một dòng lịch sử đầy đủ
 interface CheckoutHistoryLog {
   sessionId: string;
   name: string;
@@ -48,40 +46,37 @@ export default function VehicleOutPage() {
 
   const [vehicleData, setVehicleData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-  // State lưu lịch sử dạng Object để giữ cả thời gian Vào + Ra
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryLog[]>([]);
-
   const [isOpenInitModal, setIsOpenInitModal] = useState<boolean>(true);
+
   const [exitInput, setExitInput] = useState({
     eventUid: '',
     ticketCode: ''
   });
 
-  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
   const [toast, setToast] = useState<ToastState>({
     open: false,
     message: '',
     severity: 'success'
   });
 
-  // Hàm tiện ích hiển thị nhanh thông báo
   const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
     setToast({ open: true, message, severity });
   };
 
   const handleFinalCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 🌟 ĐÃ SỬA: Đổi sang dùng showToast cảnh báo bỏ trống form
+
     if (!exitInput.eventUid.trim() && !exitInput.ticketCode.trim()) {
       showToast("Vui lòng nhập Mã sự kiện hoặc quét mã vé!", "warning");
       return;
     }
+
     let userToken = localStorage.getItem("token") || "";
-    if (userToken.startsWith("Beare")) {
-      userToken = userToken.replace("Bearer", "");
+    if (userToken.startsWith("Bearer ")) {
+      userToken = userToken.replace("Bearer ", "");
     }
+
     try {
       setIsLoading(true);
 
@@ -95,14 +90,16 @@ export default function VehicleOutPage() {
       params.append('note', 'Checkout qua ứng dụng Frontend');
 
       const response = await axios.post(API_CHECKOUT_URL, params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization:  `Bearer ${userToken}`,
-         }
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Bearer ${userToken}`,
+        }
       });
 
-      if (response.data && response.data.status === "SUCCESS") {
+if (response.data && response.data.status === "SUCCESS") {
         const resData = response.data.data;
-        const sessionInfo = resData.session;
+        const sessionInfo = resData.session; 
+        const ticketInfo = resData.ticket; // 🌟 SỬA: Lấy trực tiếp từ resData.ticket theo đúng JSON mẫu
         const vehicleInfo = resData.detail?.vehicle;
         const personInfo = resData.detail?.person;
 
@@ -116,15 +113,23 @@ export default function VehicleOutPage() {
           licensePlate: vehicleInfo?.plate_number || sessionInfo?.expected_plate_number || "Không có xe (Chỉ có người)",
           driverFaceImage: personInfo?.live_face_image_url || personInfo?.cccd_face_image_url || "",
           licensePlateImage: vehicleInfo?.plate_image_url || vehicleInfo?.frame_image_url || "",
-          entryTime: sessionInfo?.checked_in_at || ""
-        };
+          entryTime: sessionInfo?.checked_in_at || "",
 
+          // 🌟 BẢO ĐẢM TICKET NHẬN ĐÚNG STATUS TỪ SESSION CỦA FASTAPI
+          ticket: {
+            ticket_id: ticketInfo?.ticket_id || "N/A",
+            ticket_code: ticketInfo?.ticket_code || exitInput.ticketCode || "N/A",
+            // 🎯 Lấy status từ sessionInfo ("CHECKED_OUT") vì ticketInfo.status vẫn đang báo "READY"
+            status: sessionInfo?.status || "CHECKED_OUT", 
+            qr_image_url: ticketInfo?.qr_image_url || "",
+            barcode_image_url: ticketInfo?.barcode_image_url || ""
+          }
+        };
         setVehicleData(mappedData);
         
-        // 🌟 ĐÃ SỬA: Đổi sang dùng showToast thông báo thành công xuất bến
         showToast("Xác thực thông tin thành công! Mở barrier cho xe xuất bến.", "success");
 
-        // Đẩy toàn bộ thông tin phiên vào bảng lịch sử
+        // Đẩy toàn bộ thông tin phiên vào bảng lịch sử nhật ký
         const newLog: CheckoutHistoryLog = {
           sessionId: sessionInfo?.session_id || `SS-${Date.now()}`,
           name: mappedData.name,
@@ -134,14 +139,15 @@ export default function VehicleOutPage() {
         };
 
         setCheckoutHistory([newLog, ...checkoutHistory]);
-        setIsOpenInitModal(false); 
+        setIsOpenInitModal(false);
+
+        // Làm sạch ô nhập liệu chuẩn bị cho xe kế tiếp
+        setExitInput({ eventUid: '', ticketCode: '' });
       } else {
-        // 🌟 ĐÃ SỬA: Đổi sang dùng showToast thông báo bị hệ thống từ chối
         showToast(`Từ chối xuất bến: ${response.data?.message || 'Lỗi đối soát hệ thống'}`, "error");
       }
     } catch (error: any) {
       console.error(error);
-      // 🌟 ĐÃ SỬA: Đổi sang dùng showToast báo lỗi kết nối hoặc lỗi Backend
       showToast(`Lỗi hệ thống: ${error.response?.data?.detail || "Không thể kết nối Backend"}`, "error");
     } finally {
       setIsLoading(false);
@@ -150,7 +156,7 @@ export default function VehicleOutPage() {
 
   return (
     <Box sx={{ bgcolor: theme.palette.customBg.main, minHeight: '100vh', p: { xs: 2, sm: 3 } }}>
-      
+
       {/* HEADER */}
       <Box sx={{ mb: 4, p: 2, borderBottom: `2px solid ${theme.palette.customBg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -175,7 +181,7 @@ export default function VehicleOutPage() {
         <Box>
           <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 3, alignItems: 'stretch' }}>
             <Box sx={{ flex: { xs: '1 1 100%', lg: '0 0 calc(33.33% - 16px)' }, width: '100%' }}>
-              <CccdInfo data={vehicleData} onUpdateField={() => {}} /> 
+              <CccdInfo data={vehicleData} onUpdateField={() => { }} />
             </Box>
             <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 16px)' }, width: '100%' }}>
               <CameraInfo data={vehicleData} />
@@ -184,7 +190,7 @@ export default function VehicleOutPage() {
         </Box>
       )}
 
-      {/* HIỂN THỊ BẢNG LỊCH SỬ PHIÊN RA VÀO TOÀN DIỆN */}
+      {/* HIỂN THỊ BẢNG LỊCH SỬ PHIÊN */}
       <Box sx={{ mt: 5 }}>
         <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
           NHẬT KÝ PHIÊN XE XUẤT BẾN TRONG CA
@@ -214,11 +220,11 @@ export default function VehicleOutPage() {
                     <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{log.sessionId}</TableCell>
                     <TableCell>{log.name}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={log.licensePlate} 
-                        color={log.licensePlate.includes("Không có xe") ? "default" : "primary"} 
-                        variant="outlined" 
-                        size="small" 
+                      <Chip
+                        label={log.licensePlate}
+                        color={log.licensePlate.includes("Không có xe") ? "default" : "primary"}
+                        variant="outlined"
+                        size="small"
                       />
                     </TableCell>
                     <TableCell sx={{ color: 'success.main', fontWeight: 500 }}>{log.checkinTime}</TableCell>
@@ -272,9 +278,9 @@ export default function VehicleOutPage() {
         </form>
       </Dialog>
 
-      <ToastNotification 
-        toast={toast} 
-        onClose={() => setToast({ ...toast, open: false })} 
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Box>
   );

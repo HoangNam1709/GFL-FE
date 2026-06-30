@@ -1,5 +1,3 @@
-// src/pages/HistoryLog/HistoryCard.tsx
-
 import { useState } from 'react';
 import { 
   Box, Typography, Card, CardContent, Grid, Chip, Avatar, 
