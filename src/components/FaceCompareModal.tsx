@@ -17,6 +17,8 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import axiosInstance from "../configs/axios";
 import type { XitecLog } from "../types/vehicle";
+import type { ToastState } from "./ToastNotification";
+import ToastNotification from "./ToastNotification";
 
 interface ImageState {
   file: File | null;
@@ -32,7 +34,6 @@ interface FaceCompareModalProps {
   defaultLiveFace?: ImageState;
 }
 
-const API_COMPARE_URL = "http://127.0.0.1:8000/api/v1/face/compare";
 
 export default function FaceCompareModal({
   open,
@@ -49,7 +50,17 @@ export default function FaceCompareModal({
   const [liveFaceFile, setLiveFaceFile] = useState<File | null>(null);
   const [liveFacePreview, setLiveFacePreview] = useState<string>("");
   const [compareResult, setCompareResult] = useState<any>(null);
+  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
+  // Hàm tiện ích hiển thị nhanh thông báo
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
   // Đồng bộ ảnh từ defaultLiveFace vào state khi modal được mở
   useEffect(() => {
     if (open && defaultLiveFace?.file) {
@@ -111,14 +122,14 @@ export default function FaceCompareModal({
         response.data?.status === "SUCCESS"
       ) {
         onCompareSuccess();
-        // alert("Xác thực khuôn mặt trùng khớp thành công!");
+        showToast("Xác thực khuôn mặt trùng khớp thành công!", "success");
       } else {
-        alert(
-          `Đối sánh hoàn tất! Kết quả: ${compareInfo?.result || "Không khớp"}`,
+        showToast(
+          `Đối sánh hoàn tất! Kết quả: ${compareInfo?.result || "Không khớp"}`, "error"
         );
       }
     } catch (error) {
-      alert("Không thể kết nối đến API đối sánh khuôn mặt.");
+      showToast("Không thể kết nối đến API đối sánh khuôn mặt.", "error");
     } finally {
       setIsComparing(false);
     }
@@ -306,6 +317,11 @@ export default function FaceCompareModal({
           {isComparing ? "ĐANG ĐỐI SÁNH..." : "COMPARE (SO SÁNH)"}
         </Button>
       </DialogActions>
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </Dialog>
   );
 }

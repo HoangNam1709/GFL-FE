@@ -78,7 +78,10 @@ export default function VehicleOutPage() {
       showToast("Vui lòng nhập Mã sự kiện hoặc quét mã vé!", "warning");
       return;
     }
-
+    let userToken = localStorage.getItem("token") || "";
+    if (userToken.startsWith("Beare")) {
+      userToken = userToken.replace("Bearer", "");
+    }
     try {
       setIsLoading(true);
 
@@ -92,7 +95,9 @@ export default function VehicleOutPage() {
       params.append('note', 'Checkout qua ứng dụng Frontend');
 
       const response = await axios.post(API_CHECKOUT_URL, params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization:  `Bearer ${userToken}`,
+         }
       });
 
       if (response.data && response.data.status === "SUCCESS") {
