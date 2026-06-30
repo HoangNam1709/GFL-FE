@@ -44,8 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // 1. Xóa key "token" tiêu chuẩn
     localStorage.removeItem("token");
+
+    // 2. Xóa sạch các key liên quan đến hệ thống camera mà bạn đã liệt kê
+    localStorage.removeItem("camera_token");
+    localStorage.removeItem("dev-camera-token");
+    localStorage.removeItem("theme_mode"); // Xóa nếu muốn reset giao diện khi logout
+    // 4. Xóa thông tin user thông thường
     localStorage.removeItem("user_info");
+
+    // 5. Cập nhật State về null để ép React re-render, bảo vệ Private Route ngay lập tức
     setToken(null);
     setUser(null);
   };

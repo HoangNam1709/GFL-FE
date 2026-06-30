@@ -1,5 +1,3 @@
-// src/layouts/SecurityLayout/Sidebar.tsx
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, Toolbar, Typography, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse, useTheme, alpha } from '@mui/material';
@@ -12,6 +10,8 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import GppGoodIcon from '@mui/icons-material/GppGood';
+import LogoutIcon from '@mui/icons-material/Logout'; // Thêm icon Đăng xuất
+import { useAuth } from '../contexts/AuthContext';
 interface SidebarProps {
   open: boolean;
   drawerWidth: number;
@@ -21,12 +21,21 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const { logout } = useAuth();
 
   // State quản lý riêng việc đóng/mở menu con Quản lý hệ thống
   const [openSettings, setOpenSettings] = useState<boolean>(false);
 
   const handleToggleSettings = () => setOpenSettings(!openSettings);
   const isActive = (path: string) => location.pathname === path;
+
+
+// Hàm xử lý đăng xuất
+  const handleLogout = () => {
+    localStorage.clear();
+    logout();
+    navigate('/login');
+  };
 
   const menuItems = [
     { text: 'Tổng Quan Camera', path: '/camera-overview', icon: <VideocamIcon /> },
@@ -35,18 +44,18 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
     { text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon /> },
   ];
 
-const settingSubItems = [
-  { 
-    text: 'Quản lý Tài khoản', 
-    path: '/system-management/users-management', 
-    icon: <ManageAccountsIcon fontSize="small" /> 
-  },
-  { 
-    text: 'Phân quyền & Vai trò', 
-    path: '/system-management/permissions', 
-    icon: <GppGoodIcon fontSize="small" /> 
-  },
-];
+  const settingSubItems = [
+    { 
+      text: 'Quản lý Tài khoản', 
+      path: '/system-management/users-management', 
+      icon: <ManageAccountsIcon fontSize="small" /> 
+    },
+    { 
+      text: 'Phân quyền & Vai trò', 
+      path: '/system-management/permissions', 
+      icon: <GppGoodIcon fontSize="small" /> 
+    },
+  ];
 
   return (
     <Drawer
@@ -65,7 +74,10 @@ const settingSubItems = [
           boxSizing: 'border-box',
           bgcolor: theme.palette.customBg.card,
           color: theme.palette.text.primary,
-          borderRight: `1px solid ${theme.palette.customBg.border}`
+          borderRight: `1px solid ${theme.palette.customBg.border}`,
+          // --- Biến Drawer Paper thành Flexbox để đẩy nội dung xuống đáy ---
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
@@ -76,7 +88,8 @@ const settingSubItems = [
         </Typography>
       </Toolbar>
 
-      <Box sx={{ overflow: 'auto', mt: 2 }}>
+      {/* flexGrow: 1 ở đây sẽ chiếm trọn không gian trống và đẩy phần tử phía sau xuống đáy */}
+      <Box sx={{ overflow: 'auto', mt: 2, flexGrow: 1 }}>
         <List>
           {/* MENU CHÍNH ĐƠN CẤP */}
           {menuItems.map((item) => {
@@ -149,6 +162,33 @@ const settingSubItems = [
               })}
             </List>
           </Collapse>
+        </List>
+      </Box>
+
+      {/* --- KHỐI ĐĂNG XUẤT ĐƯỢC ĐẨY XUỐNG DƯỚI CÙNG --- */}
+      <Box sx={{ p: 1, borderTop: `1px solid ${theme.palette.customBg.border}` }}>
+        <List disablePadding>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={handleLogout}
+              sx={{
+                mx: 0.5,
+                borderRadius: '8px',
+                color: theme.palette.error.main, // Chuyển chữ thành màu đỏ (MUI Error)
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.08), // Hiệu ứng hover đỏ nhạt
+                }
+              }}
+            >
+              <ListItemIcon sx={{ color: theme.palette.error.main }}>
+                <LogoutIcon />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Đăng xuất" 
+                slotProps={{ primary: { sx: { fontWeight: 600 } } }} 
+              />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Box>
     </Drawer>

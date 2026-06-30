@@ -1,15 +1,14 @@
-// src/components/ProtectedRoute.tsx
 import { type ReactNode } from 'react';
-// import { useAuth } from '../contexts/AuthContext'; 
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; 
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-  // const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  // if (!isAuthenticated) {
-  //   // Nếu chưa login, chuyển hướng về trang login
-  //   window.location.href = '/login';
-  //   return null;
-  // }
+  if (!isAuthenticated) {
+    // Chuyển hướng mượt mà không bị reload lại trang
+    return <Navigate to="/login" replace />;
+  }
 
   return <>{children}</>;
 }
