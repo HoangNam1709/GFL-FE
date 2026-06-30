@@ -20,6 +20,8 @@ import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import CancelIcon from "@mui/icons-material/Cancel";
 import axios from "axios";
 import type { XitecLog } from "../../../types/vehicle";
+import type { ToastState } from "../../../components/ToastNotification";
+import ToastNotification from "../../../components/ToastNotification";
 
 interface DriverIdentityModalProps {
   open: boolean;
@@ -68,9 +70,19 @@ export default function DriverIdentityModal({
     setCccdFile(null);
     setCccdPreview("");
   };
+  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+  // Hàm tiện ích hiển thị nhanh thông báo
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   const handlePersonSubmit = async () => {
-    if (!cccdFile) return showToast("Vui lòng tải lên file ảnh CCCD tài xế!","warning");
+    if (!cccdFile) return showToast("Vui lòng tải lên file ảnh CCCD tài xế!", "warning");
 
     // SỬA TẠI ĐÂY: Chủ động lấy token từ localStorage
     const Token = localStorage.getItem("token");

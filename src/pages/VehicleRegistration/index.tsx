@@ -25,7 +25,6 @@ import PrintIcon from "@mui/icons-material/Print";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { CheckCircleOutlined as CheckCircleOutlineIcon } from "@mui/icons-material";
-// SỬA TẠI ĐÂY: Dùng axios thuần, không dùng axiosInstance chung để né bộ chặn logout tự động
 import axios from "axios";
 import { useAuth } from "../../contexts/AuthContext";
 import CustomButton from "../../components/CustomButton";
@@ -34,6 +33,8 @@ import CameraInfo from "../VehicleIn/components/CameraInfo";
 import DriverIdentityModal from "./components/DriverIdentityModal";
 import FaceCompareModal from "../../components/FaceCompareModal";
 import type { XitecLog } from "../../types/vehicle";
+import type { ToastState } from "../../components/ToastNotification";
+import ToastNotification from "../../components/ToastNotification";
 
 interface ImageState {
   file: File | null;

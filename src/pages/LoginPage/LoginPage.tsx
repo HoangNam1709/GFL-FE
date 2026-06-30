@@ -26,7 +26,6 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const theme = useTheme();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password)
