@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, type ReactNode} from 'react';
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 interface UserInfo {
   username: string;
   role: string;
+  organizationId: string;
 }
 
 interface AuthContextType {
@@ -16,22 +17,35 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token"),
+  );
   const [user, setUser] = useState<UserInfo | null>(() => {
-    const savedUser = localStorage.getItem('user_info');
+    const savedUser = localStorage.getItem("user_info");
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const login = (jwtToken: string, userInfo: UserInfo) => {
-    localStorage.setItem('token', jwtToken);
-    localStorage.setItem('user_info', JSON.stringify(userInfo));
+  // SỬA TẠI ĐÂY: Nhận userInfo là any để xử lý map dữ liệu từ Backend mock
+  const login = (jwtToken: string, userInfo: any) => {
+    // Tạo một object chuẩn theo đúng Interface UserInfo của Frontend
+    console.log(">>> [DEBUG LOGIN] Cục userInfo gốc từ Backend:", userInfo);
+    const normalizedUser: UserInfo = {
+      username: userInfo.username || userInfo.email || "",
+      role: userInfo.role || (userInfo.roles ? userInfo.roles[0] : "guard"),
+
+      // CẦU NỐI: Nếu backend trả về org_id thì gán vào organizationId
+      organizationId: userInfo.organizationId || userInfo.org_id || "",
+    };
+
+    localStorage.setItem("token", jwtToken);
+    localStorage.setItem("user_info", JSON.stringify(normalizedUser));
     setToken(jwtToken);
-    setUser(userInfo);
+    setUser(normalizedUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_info');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_info");
     setToken(null);
     setUser(null);
   };
@@ -39,7 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!token;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, user, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, token, user, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -47,6 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
