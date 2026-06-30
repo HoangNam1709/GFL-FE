@@ -38,7 +38,10 @@ export default function TicketMatchInfo({ item }: TicketMatchInfoProps) {
     return { label: `CHƯA XÁC ĐỊNH (${status})`, color: 'default' as const };
   };
 
-  const ticketStatus = renderTicketStatus(item.ticket?.status, (item.status || (item.session && item.session.status)));
+  const ticketStatus = renderTicketStatus(
+    item?.ticket?.status,
+    item?.status ?? item?.session?.status
+  );
 
   return (
     <Grid size={{ xs: 12 }}>
