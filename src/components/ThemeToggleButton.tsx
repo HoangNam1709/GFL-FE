@@ -11,34 +11,30 @@ export default function ThemeToggleButton() {
   return (
     <IconButton
       onClick={toggleTheme}
+      size="small" // Đặt size mặc định là nhỏ
       sx={{
         color: theme.palette.text.primary, 
         
-        // 🌟 XỬ LÝ MÀU NỀN ĐẬM RÕ: 
-        // Dark Mode: Màu trắng mờ 8% trên nền tối
-
-        bgcolor: isDarkMode ? alpha('#ffffff', 0.08) : '#ffffff', 
-        boxShadow: isDarkMode 
-          ? 'none' 
-          : '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 3px rgba(0, 0, 0, 0.04)',
+        // Cân đối lại màu nền phẳng tinh tế
+        bgcolor: isDarkMode ? alpha('#ffffff', 0.06) : alpha('#000000', 0.03), 
+        boxShadow: 'none', // Loại bỏ shadow lớn rườm rà trên thanh Header phẳng
           
-        border: `1px solid ${isDarkMode ? alpha('#ffffff', 0.1) : '#e0e0e0'}`, // Viền mảnh tinh tế
-        p: 1.2, 
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)', // Hiệu ứng mượt hơn
+        border: `1px solid ${isDarkMode ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06)}`,
+        p: 0.6, // 🌟 Thu nhỏ khoảng đệm lại (Gốc là 1.2)
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         
         '&:hover': {
-          // Khi hover: Dark mode sáng hơn tí, Light mode chuyển xám cực nhẹ
-          bgcolor: isDarkMode ? alpha('#ffffff', 0.18) : '#f5f5f5',
-          transform: 'rotate(15deg) scale(1.08)',
-          boxShadow: isDarkMode ? 'none' : '0px 4px 12px rgba(0, 0, 0, 0.12)',
+          bgcolor: isDarkMode ? alpha('#ffffff', 0.12) : alpha('#000000', 0.08),
+          transform: 'rotate(15deg)', // 🌟 Chỉ xoay, bỏ scale(1.08) để tránh lấn chiều cao Header
+          boxShadow: 'none',
         }
       }}
       aria-label="Cài đặt giao diện"
     >
       {isDarkMode ? (
-        <Brightness7Icon sx={{ color: '#ffb74d' }} />
+        <Brightness7Icon sx={{ color: '#ffb74d', fontSize: 18 }} /> // 🌟 Thu nhỏ icon xuống 18px
       ) : (
-        <Brightness4Icon sx={{ color: '#1976d2' }} />
+        <Brightness4Icon sx={{ color: theme.palette.text.textheader || '#424242', fontSize: 18 }} /> // 🌟 Thu nhỏ icon xuống 18px
       )}
     </IconButton>
   );
