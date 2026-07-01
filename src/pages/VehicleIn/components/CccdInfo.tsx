@@ -1,4 +1,5 @@
-import { Card, CardContent, Typography, Box, TextField, useTheme } from '@mui/material'; // 🌟 Import useTheme
+import { Card, CardContent, Typography, Box, TextField, useTheme } from '@mui/material';
+import Grid from '@mui/material/Grid'; // Sử dụng Grid để phân bổ layout phẳng
 import type { ChangeEvent } from 'react';
 import type { XitecLog } from '../../../types/vehicle';
 
@@ -8,141 +9,140 @@ interface CccdInfoProps {
 }
 
 export default function CccdInfo({ data, onUpdateField }: CccdInfoProps) {
-  const theme = useTheme(); // 🌟 Kích hoạt bộ theo dõi Theme động của hệ thống
+  const theme = useTheme();
 
   return (
     <Card 
       sx={{ 
-        // 🌟 Đồng bộ màu nền Card và viền động theo theme
-        bgcolor: theme.palette.customBg.card, 
-        border: `1px solid ${theme.palette.customBg.border}`, 
-        borderRadius: 2, 
+        bgcolor: theme.palette.background.paper, 
+        border: `1px solid ${theme.palette.divider}`, 
+        borderRadius: '8px', 
         height: '100%', 
+        boxShadow: 'none',
         display: 'flex', 
         flexDirection: 'column' 
       }}
     >
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 2 }}>
-          🪪 1. DỮ LIỆU OCR CCCD
+      <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1, p: 2.5 }}>
+        {/* Tiêu đề nghiệp vụ */}
+        <Typography 
+          variant="subtitle1" 
+          sx={{ 
+            color: theme.palette.primary.main, 
+            fontWeight: 'bold', 
+            mb: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          🪪 1. DỮ LIỆU OCR CCCD ĐỒNG BỘ
         </Typography>
 
-        {/* Ảnh chân dung quét từ CCCD */}
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
-            Ảnh mặt trên CCCD:
-          </Typography>
+        {/* Khối hiển thị ảnh chân dung */}
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            bgcolor: theme.palette.action.hover,
+            borderRadius: '6px',
+            p: 1.5,
+            mb: 2.5,
+            border: `1px dashed ${theme.palette.divider}`
+          }}
+        >
           <Box
             component="img"
             src={data.nationalIdImage}
             alt="Mat CCCD"
             sx={{
-              width: 250,
-              height: 250,
-              borderRadius: 1,
+              width: '100%',
+              maxWidth: 220,
+              height: 140, // Tỷ lệ chuẩn của ảnh thẻ cắt từ CCCD
+              borderRadius: '4px',
               objectFit: 'cover',
-              border: `2px solid ${theme.palette.primary.main}`, // Viền đổi theo màu primary
+              border: `1px solid ${theme.palette.divider}`,
             }}
           />
         </Box>
 
-        {/* Ô NHẬP LIỆU: Số CCCD */}
-        <TextField
-          fullWidth
-          label="Số CCCD"
-          variant="outlined"
-          value={data.nationalId}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('nationalId', e.target.value)}
-          slotProps={{
-            input: { 
-              sx: { 
-                // 🌟 Động hóa màu chữ và nền ô nhập
-                color: theme.palette.text.primary, 
-                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
-              } 
-            },
-            inputLabel: { 
-              sx: { 
-                color: theme.palette.primary.main,
-                // Giúp màu label khi focus không bị lỗi màu trắng ở light mode
-                '&.Mui-focused': { color: theme.palette.primary.main } 
-              } 
-            }
-          }}
-          sx={{ mb: 2 }}
-        />
+        {/* Lưới nhập liệu thông tin phân tích hệ thống */}
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Số CCCD"
+              variant="outlined"
+              value={data.nationalId}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('nationalId', e.target.value)}
+              slotProps={{
+                input: { 
+                  sx: { 
+                    fontWeight: '500',
+                    bgcolor: theme.palette.action.hover
+                  } 
+                }
+              }}
+            />
+          </Grid>
 
-        {/* Ô NHẬP LIỆU: Họ và Tên tài xế */}
-        <TextField
-          fullWidth
-          label="Họ và Tên tài xế"
-          variant="outlined"
-          value={data.driverName}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('driverName', e.target.value.toUpperCase())}
-          slotProps={{
-            input: { 
-              sx: { 
-                color: theme.palette.primary.main, 
-                fontWeight: 'bold', 
-                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
-              } 
-            },
-            inputLabel: { 
-              sx: { 
-                color: theme.palette.primary.main,
-                '&.Mui-focused': { color: theme.palette.primary.main }
-              } 
-            }
-          }}
-          sx={{ mb: 2 }}
-        />
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Ngày sinh"
+              variant="outlined"
+              value={data.birth || ''}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('birth', e.target.value)}
+              slotProps={{
+                input: { 
+                  sx: { bgcolor: theme.palette.action.hover } 
+                }
+              }}
+            />
+          </Grid>
 
-        {/* Ô NHẬP LIỆU: Ngày sinh */}
-        <TextField
-          fullWidth
-          label="Ngày sinh"
-          variant="outlined"
-          value={data.birth || ''}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('birth', e.target.value)}
-          slotProps={{
-            input: { 
-              sx: { 
-                color: theme.palette.text.primary, 
-                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
-              } 
-            },
-            inputLabel: { 
-              sx: { 
-                color: theme.palette.primary.main,
-                '&.Mui-focused': { color: theme.palette.primary.main }
-              } 
-            }
-          }}
-          sx={{ mb: 2 }}
-        />
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Họ và Tên tài xế"
+              variant="outlined"
+              value={data.driverName}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('driverName', e.target.value.toUpperCase())}
+              slotProps={{
+                input: { 
+                  sx: { 
+                    color: theme.palette.primary.main, 
+                    fontWeight: 'bold', 
+                    bgcolor: theme.palette.action.hover 
+                  } 
+                }
+              }}
+            />
+          </Grid>
 
-        {/* Ô NHẬP LIỆU: Nơi cấp / Nơi ở */}
-        <TextField
-          fullWidth
-          label="Nơi cấp / Nơi ở"
-          variant="outlined"
-          value={data.place || ''}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('place', e.target.value)}
-          slotProps={{
-            input: { 
-              sx: { 
-                color: theme.palette.text.primary, 
-                bgcolor: theme.palette.mode === 'dark' ? '#222222' : '#f0f0f0' 
-              } 
-            },
-            inputLabel: { 
-              sx: { 
-                color: theme.palette.primary.main,
-                '&.Mui-focused': { color: theme.palette.primary.main }
-              } 
-            }
-          }}
-        />
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Nơi cấp / Nơi đăng ký thường trú"
+              variant="outlined"
+              multiline
+              rows={2}
+              value={data.place || ''}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdateField('place', e.target.value)}
+              slotProps={{
+                input: { 
+                  sx: { bgcolor: theme.palette.action.hover } 
+                }
+              }}
+            />
+          </Grid>
+        </Grid>
+
       </CardContent>
     </Card>
   );
