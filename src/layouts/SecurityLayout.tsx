@@ -6,7 +6,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 
 const DRAWER_WIDTH = 260;
-const HEADER_HEIGHT = 56; // fix cứng chiều cao đã đồng bộ với Header
+const HEADER_HEIGHT = 56; 
 
 export default function SecurityLayout() {
   const theme = useTheme();
@@ -17,7 +17,7 @@ export default function SecurityLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: theme.palette.customBg.main }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: theme.palette.background.default }}>
       <CssBaseline />
 
       {/* 1. Thanh công cụ phía trên */}
@@ -26,24 +26,26 @@ export default function SecurityLayout() {
       {/* 2. Thanh điều hướng bên trái */}
       <Sidebar open={open} drawerWidth={DRAWER_WIDTH} />
 
-      {/* 3. Vùng hiển thị nội dung chính (Đã tối ưu hóa lề) */}
+      {/* 3. Vùng hiển thị nội dung chính - Fix lỗi co vỡ khung hình */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 2, // 🌟 Giảm từ 3 xuống 2 (16px) để nội dung sát biên tinh gọn, rộng rãi
+          p: 2, 
           color: theme.palette.text.primary,
-          minWidth: 0, // Chống vỡ layout bảng dữ liệu lớn
+          minWidth: 0, // Đảm bảo an toàn, chống vỡ các bảng dữ liệu lớn (Datagrid/Table)
           
-          // 🌟 Tính toán lề trái động: Nếu Sidebar mở thì dịch vào 260px, nếu đóng thì sát lề 0px
-          marginLeft: open ? 0 : `-${DRAWER_WIDTH}px`, 
+          // Fix lỗi: Khi đóng/mở, ta thay đổi width động thay vì giật lùi marginLeft âm
+          width: open ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%',
           
           paddingTop: `${HEADER_HEIGHT + 16}px`, 
           
-          transition: (t) => t.transitions.create(['margin', 'padding'], {
-            easing: t.transitions.easing.sharp,
-            duration: t.transitions.duration.leavingScreen,
-          }),
+          // Đồng bộ transition mượt mà chuẩn Material Design
+          transition: (t) =>
+            t.transitions.create(['width', 'margin'], {
+              easing: open ? t.transitions.easing.easeOut : t.transitions.easing.sharp,
+              duration: open ? t.transitions.duration.enteringScreen : t.transitions.duration.leavingScreen,
+            }),
         }}
       >
         <Outlet />
