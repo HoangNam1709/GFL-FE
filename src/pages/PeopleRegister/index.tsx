@@ -9,21 +9,18 @@ import {
   useTheme,
   InputAdornment,
   Divider,
-  Grid
 } from '@mui/material';
+import Grid from '@mui/material/Grid'; // Sử dụng Grid thế hệ mới ổn định
 import { alpha } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
 import PhoneIcon from '@mui/icons-material/Phone';
 import BusinessIcon from '@mui/icons-material/Business';
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import SaveIcon from '@mui/icons-material/Save';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 
-// Import CustomButton từ dự án của bạn
 import CustomButton from '../../components/CustomButton';
 
-// Định nghĩa các loại đối tượng ra vào bốt
 const USER_TYPES = [
   { value: 'Khach', label: 'Khách vãng lai / Đối tác' },
   { value: 'NhanVien', label: 'Nhân viên tòa nhà / Công ty' },
@@ -34,7 +31,6 @@ export default function UserRegistrationPage() {
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // 1. State quản lý dữ liệu nhập vào của người đăng ký
   const [formData, setFormData] = useState({
     fullName: '',
     idCard: '',
@@ -44,27 +40,23 @@ export default function UserRegistrationPage() {
     notes: ''
   });
 
-  // 2. State quản lý thông báo lỗi đỏ dưới chân input
   const [errors, setErrors] = useState({
     fullName: '',
     idCard: '',
     phoneNumber: ''
   });
 
-  // Hàm xử lý khi người dùng nhập liệu
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [field]: field === 'fullName' ? e.target.value.toUpperCase() : e.target.value
     });
 
-    // Nếu người dùng bắt đầu nhập, lập tức xóa vết lỗi đỏ của ô đó
     if (e.target.value.trim() !== '') {
       setErrors(prev => ({ ...prev, [field]: '' })); 
     }
   };
 
-  // 3. Trạm kiểm soát an ninh (Validate Form)
   const validateForm = () => {
     let valid = true;
     const newErrors = { fullName: '', idCard: '', phoneNumber: '' };
@@ -88,18 +80,14 @@ export default function UserRegistrationPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Nếu có ô trống, chặn đứng luồng xử lý lại
     if (!validateForm()) return;
 
     setIsLoading(true);
-    console.log("Dữ liệu đăng ký người gửi lên Backend:", formData);
-
-    // Giả lập gọi API
+    
+    // Giả lập xử lý lưu trữ dữ liệu nghiệp vụ
     setTimeout(() => {
       setIsLoading(false);
       alert(`Đăng ký thành công thông tin khách: ${formData.fullName}`);
-      // Reset form sau khi thành công
       setFormData({
         fullName: '',
         idCard: '',
@@ -112,51 +100,52 @@ export default function UserRegistrationPage() {
   };
 
   return (
-    <Box sx={{ bgcolor: theme.palette.customBg.main, minHeight: '100vh', p: { xs: 2, sm: 4 } }}>
+    <Box sx={{ bgcolor: theme.palette.background.default, minHeight: '100vh', p: { xs: 2, sm: 3 } }}>
 
-      {/* HEADER CỦA TRANG */}
-      <Box sx={{ mb: 4, pb: 2, borderBottom: `2px solid ${theme.palette.customBg.border}`, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <GroupAddIcon sx={{ color: theme.palette.primary.main, fontSize: 35 }} />
+      {/* HEADER HỆ THỐNG */}
+      <Box sx={{ mb: 3, pb: 1.5, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <GroupAddIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} />
         <Box>
-          <Typography variant="h5" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
+          <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', lineHeight: 1.2 }}>
             HỆ THỐNG ĐĂNG KÝ & QUẢN LÝ THÔNG TIN KHÁCH RA VÀO
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Cấp phát thông tin định danh cho khách hàng, đối tác hoặc nhân viên mới.
+            Cấp phát thông tin định danh điều khiển cho khách hàng, đối tác hoặc nhân viên mới tại bốt.
           </Typography>
         </Box>
       </Box>
 
-      {/* FORM CHÍNH */}
+      {/* KHU VỰC FORM TRUNG TÂM */}
       <Box component="form" onSubmit={handleSubmit} noValidate>
-        <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
+        <Grid container spacing={2.5}>
 
-          {/* PHÂN KHU 1: THÔNG TIN CÁ NHÂN BẮT BUỘC */}
+          {/* BLOCK TRÁI: THÔNG TIN CÁ NHÂN */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Card sx={{ bgcolor: theme.palette.customBg.card, border: `1px solid ${theme.palette.customBg.border}`, borderRadius: '12px', height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PersonIcon color="primary" /> Thông Tin Cá Nhân
+            <Card sx={{ bgcolor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: '8px', boxShadow: 'none', height: '100%' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="subtitle1" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PersonIcon fontSize="small" /> Thông Tin Cá Nhân Bắt Buộc
                 </Typography>
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: 2 }} />
 
                 <Grid container spacing={2}>
-                  <Grid size={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       required
                       fullWidth
+                      size="small"
                       label="Họ và Tên Người Đăng Ký"
-                      placeholder="Ví dụ: NGUYỄN VĂN B"
+                      placeholder="VÍ DỤ: NGUYỄN VĂN A"
                       value={formData.fullName}
                       onChange={handleChange('fullName')}
                       error={Boolean(errors.fullName)}
                       helperText={errors.fullName}
                       slotProps={{
                         input: {
-                          style: { textTransform: 'uppercase' }, // Tự động viết hoa chữ trong ô nhập
+                          style: { textTransform: 'uppercase', fontWeight: '500' },
                           startAdornment: (
                             <InputAdornment position="start">
-                              <PersonIcon />
+                              <PersonIcon color="action" fontSize="small" />
                             </InputAdornment>
                           ),
                         },
@@ -164,12 +153,13 @@ export default function UserRegistrationPage() {
                     />
                   </Grid>
 
-                  <Grid size={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       required
                       fullWidth
+                      size="small"
                       label="Số CCCD / Hộ Chiếu"
-                      placeholder="Nhập 12 số định danh"
+                      placeholder="Nhập 12 số định danh cá nhân"
                       value={formData.idCard}
                       onChange={handleChange('idCard')}
                       error={Boolean(errors.idCard)}
@@ -178,7 +168,7 @@ export default function UserRegistrationPage() {
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <BadgeIcon />
+                              <BadgeIcon color="action" fontSize="small" />
                             </InputAdornment>
                           ),
                         },
@@ -190,20 +180,21 @@ export default function UserRegistrationPage() {
             </Card>
           </Grid>
 
-          {/* PHÂN KHU 2: PHÂN LOẠI & THÔNG TIN LIÊN HỆ */}
+          {/* BLOCK PHẢI: PHÂN LOẠI & ĐIỀU HÀNH */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Card sx={{ bgcolor: theme.palette.customBg.card, border: `1px solid ${theme.palette.customBg.border}`, borderRadius: '12px', height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AssignmentIndIcon color="primary" /> Phân Loại & Liên Hệ
+            <Card sx={{ bgcolor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: '8px', boxShadow: 'none', height: '100%' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="subtitle1" sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <BadgeIcon fontSize="small" /> Phân Loại Định Danh & Liên Hệ
                 </Typography>
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: 2 }} />
 
                 <Grid container spacing={2}>
-                  <Grid size={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       required
                       fullWidth
+                      size="small"
                       label="Số Điện Thoại"
                       placeholder="Ví dụ: 0987xxxxxx"
                       value={formData.phoneNumber}
@@ -214,7 +205,7 @@ export default function UserRegistrationPage() {
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <PhoneIcon />
+                              <PhoneIcon color="action" fontSize="small" />
                             </InputAdornment>
                           ),
                         },
@@ -226,6 +217,7 @@ export default function UserRegistrationPage() {
                     <TextField
                       select
                       fullWidth
+                      size="small"
                       label="Nhóm Đối Tượng"
                       value={formData.userType}
                       onChange={handleChange('userType')}
@@ -241,15 +233,16 @@ export default function UserRegistrationPage() {
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
-                      label="Công ty / Phòng ban (Nếu có)"
-                      placeholder="Ví dụ: Phòng IT, Cty A"
+                      size="small"
+                      label="Công ty / Khối phòng ban"
+                      placeholder="Nếu có..."
                       value={formData.companyDepartment}
                       onChange={handleChange('companyDepartment')}
                       slotProps={{
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <BusinessIcon />
+                              <BusinessIcon color="action" fontSize="small" />
                             </InputAdornment>
                           ),
                         },
@@ -261,48 +254,45 @@ export default function UserRegistrationPage() {
             </Card>
           </Grid>
 
-          {/* KHU VỰC GHI CHÚ */}
-          <Grid size={{ xs: 12, md: 6 }}>
+          {/* HÀNG CUỐI: GHI CHÚ & HÀNH ĐỘNG HỆ THỐNG */}
+          <Grid size={{ xs: 12, md: 8 }}>
             <TextField
               fullWidth
+              size="small"
               multiline
-              rows={3}
-              label="Lý do vào bốt / Ghi chú thêm thông tin đi kèm..."
+              rows={2}
+              label="Mục đích vào bốt / Ghi chú lịch trình di chuyển..."
               value={formData.notes}
               onChange={handleChange('notes')}
-              sx={{ bgcolor: theme.palette.customBg.card, borderRadius: '8px' }}
+              sx={{ bgcolor: theme.palette.background.paper, borderRadius: '4px' }}
             />
           </Grid>
 
-          {/* NÚT HOÀN TẤT */}
-          <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, alignItems: 'flex-end' }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', alignItems: 'stretch' }}>
             <CustomButton
               type="submit"
               variant="contained"
-              size="large"
               startIcon={<SaveIcon />}
               isLoading={isLoading}
               sx={{
                 fontWeight: 'bold',
-                px: 5, py: 1.8, fontSize: '16px',
-                bgcolor: theme.palette.mode === 'light' ? '#1976d2' : theme.palette.primary.main,
-                color: theme.palette.mode === 'light' ? '#fff' : '#000',
-                boxShadow: theme.palette.mode === 'light'
-                  ? `0px 4px 20px ${alpha('#1976d2', 0.2)}`
-                  : `0px 4px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                width: '100%',
+                height: '100%',
+                minHeight: '48px', // Bảo toàn độ cao cân bằng với ô ghi chú kế bên
+                bgcolor: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText, // Chữ tự động tương phản chuẩn xác
+                boxShadow: `0px 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
                 '&:hover': {
-                  bgcolor: theme.palette.mode === 'light' ? '#115293' : '#e68a00'
-                },
-                width: { xs: '100%', sm: 'auto' }
+                  bgcolor: theme.palette.primary.dark,
+                }
               }}
             >
-              HOÀN TẤT ĐĂNG KÝ NGƯỜI
+              LƯU & CẤP QUYỀN TRUY CẬP
             </CustomButton>
           </Grid>
 
         </Grid>
       </Box>
-
     </Box>
   );
 }
