@@ -5,7 +5,7 @@ import { Box, Toolbar, CssBaseline, useTheme } from '@mui/material';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
-const DRAWER_WIDTH = 280;
+const DRAWER_WIDTH = 260;
 
 export default function SecurityLayout() {
   const theme = useTheme();
