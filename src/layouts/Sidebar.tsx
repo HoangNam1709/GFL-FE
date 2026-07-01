@@ -1,5 +1,3 @@
-// src/layouts/SecurityLayout/Sidebar.tsx
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, Toolbar, Typography, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse, useTheme, alpha } from '@mui/material';
@@ -12,6 +10,9 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import GppGoodIcon from '@mui/icons-material/GppGood';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../contexts/AuthContext';
+
 interface SidebarProps {
   open: boolean;
   drawerWidth: number;
@@ -21,32 +22,38 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const { logout } = useAuth();
 
-  // State quản lý riêng việc đóng/mở menu con Quản lý hệ thống
   const [openSettings, setOpenSettings] = useState<boolean>(false);
 
   const handleToggleSettings = () => setOpenSettings(!openSettings);
   const isActive = (path: string) => location.pathname === path;
 
+  const handleLogout = () => {
+    localStorage.clear();
+    logout();
+    navigate('/login');
+  };
+
   const menuItems = [
-    { text: 'Tổng Quan Camera', path: '/camera-overview', icon: <VideocamIcon /> },
-    { text: 'Lịch Sử Ra Vào', path: '/log-history', icon: <HistoryIcon /> },
-    { text: 'Đăng Ký Xe', path: '/register-car', icon: <NoCrashIcon /> },
-    { text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon /> },
+    { text: 'Tổng Quan Camera', path: '/camera-overview', icon: <VideocamIcon sx={{ fontSize: 20 }} /> },
+    { text: 'Lịch Sử Ra Vào', path: '/log-history', icon: <HistoryIcon sx={{ fontSize: 20 }} /> },
+    { text: 'Đăng Ký Xe', path: '/register-car', icon: <NoCrashIcon sx={{ fontSize: 20 }} /> },
+    { text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon sx={{ fontSize: 20 }} /> },
   ];
 
-const settingSubItems = [
-  { 
-    text: 'Quản lý Tài khoản', 
-    path: '/system-management/users-management', 
-    icon: <ManageAccountsIcon fontSize="small" /> 
-  },
-  { 
-    text: 'Phân quyền & Vai trò', 
-    path: '/system-management/permissions', 
-    icon: <GppGoodIcon fontSize="small" /> 
-  },
-];
+  const settingSubItems = [
+    { 
+      text: 'Quản lý Tài khoản', 
+      path: '/system-management/users-management', 
+      icon: <ManageAccountsIcon fontSize="small" /> 
+    },
+    { 
+      text: 'Phân quyền & Vai trò', 
+      path: '/system-management/permissions', 
+      icon: <GppGoodIcon fontSize="small" /> 
+    },
+  ];
 
   return (
     <Drawer
@@ -65,19 +72,21 @@ const settingSubItems = [
           boxSizing: 'border-box',
           bgcolor: theme.palette.customBg.card,
           color: theme.palette.text.primary,
-          borderRight: `1px solid ${theme.palette.customBg.border}`
+          borderRight: `1px solid ${theme.palette.customBg.border}`,
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
       <Toolbar />
-      <Toolbar sx={{ justifyContent: 'center', borderBottom: `1px solid ${theme.palette.customBg.border}`, minHeight: '48px !important' }}>
-        <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, fontWeight: 'bold' }}>
-          🛡️ KHU VỰC ĐIỀU HÀNH
+      <Toolbar sx={{ justifyContent: 'flex-start', px: '20px !important', borderBottom: `1px solid ${theme.palette.customBg.border}`, minHeight: '48px !important' }}>
+        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700, letterSpacing: '1px' }}>
+          HỆ THỐNG ĐIỀU HÀNH
         </Typography>
       </Toolbar>
 
-      <Box sx={{ overflow: 'auto', mt: 2 }}>
-        <List>
+      <Box sx={{ overflow: 'auto', mt: 1, flexGrow: 1 }}>
+        <List sx={{ p: 0 }}>
           {/* MENU CHÍNH ĐƠN CẤP */}
           {menuItems.map((item) => {
             const isSelected = isActive(item.path);
@@ -87,20 +96,24 @@ const settingSubItems = [
                   onClick={() => navigate(item.path)}
                   selected={isSelected}
                   sx={{
-                    mx: 1, borderRadius: '8px', mb: 1, color: 'text.primary',
+                    mx: 0.75, borderRadius: '4px', mb: 0.5, py: 1, px: 1.5, color: theme.palette.text.primary,
+                    borderLeft: isSelected ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent', // Thanh màu chỉ định bên cạnh menu active
                     '&.Mui-selected': {
-                      bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.15) : alpha('#222121', 0.12),
-                      color: 'primary.main',
-                      '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.25) : alpha('#242323', 0.2) },
-                      '& .MuiListItemIcon-root': { color: 'primary.main' }
+                      bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.06),
+                      color: theme.palette.primary.main,
+                      '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.18) : alpha(theme.palette.primary.main, 0.1) },
+                      '& .MuiListItemIcon-root': { color: theme.palette.primary.main }
                     },
-                    '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.05) : alpha('#000000', 0.09) }
+                    '&:hover': { 
+                      bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.04) : alpha('#000000', 0.04),
+                      '& .MuiListItemIcon-root': { color: theme.palette.text.primary }
+                    }
                   }}
                 >
-                  <ListItemIcon sx={{ color: isSelected ? theme.palette.primary.main : theme.palette.text.primary }}>
+                  <ListItemIcon sx={{ minWidth: '32px', color: isSelected ? theme.palette.primary.main : theme.palette.text.secondary }}>
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText primary={item.text} slotProps={{ primary: { sx: { fontWeight: isSelected ? 700 : 500 } } }} />
+                  <ListItemText primary={item.text} slotProps={{ primary: { sx: { fontSize: '13.5px', fontWeight: isSelected ? 600 : 500 } } }} />
                 </ListItemButton>
               </ListItem>
             );
@@ -110,17 +123,21 @@ const settingSubItems = [
           <ListItem disablePadding>
             <ListItemButton
               onClick={handleToggleSettings}
-              sx={{ mx: 1, borderRadius: '8px', mb: 0.5, color: 'text.primary', '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.05) : alpha('#000000', 0.09) } }}
+              sx={{ 
+                mx: 0.75, borderRadius: '4px', mb: 0.5, py: 1, px: 1.5, color: theme.palette.text.primary,
+                borderLeft: '3px solid transparent',
+                '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.04) : alpha('#000000', 0.04) } 
+              }}
             >
-              <ListItemIcon sx={{ color: theme.palette.text.primary }}><SettingsIcon /></ListItemIcon>
-              <ListItemText primary="Quản Lý Hệ Thống" slotProps={{ primary: { sx: { fontWeight: 500 } } }} />
-              {openSettings ? <ExpandLess /> : <ExpandMore />}
+              <ListItemIcon sx={{ minWidth: '32px', color: theme.palette.text.secondary }}><SettingsIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+              <ListItemText primary="Quản Lý Hệ Thống" slotProps={{ primary: { sx: { fontSize: '13.5px', fontWeight: 500 } } }} />
+              {openSettings ? <ExpandLess sx={{ fontSize: 18, color: 'text.secondary' }} /> : <ExpandMore sx={{ fontSize: 18, color: 'text.secondary' }} />}
             </ListItemButton>
           </ListItem>
 
           {/* KHỐI CON SỔ XUỐNG */}
           <Collapse in={openSettings} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <List component="div" disablePadding sx={{ pl: 4, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               {settingSubItems.map((subItem) => {
                 const isSubSelected = isActive(subItem.path);
                 return (
@@ -129,26 +146,56 @@ const settingSubItems = [
                       onClick={() => navigate(subItem.path)}
                       selected={isSubSelected}
                       sx={{
-                        mx: 1, borderRadius: '6px', height: '40px', color: 'text.primary',
+                        mx: 0.75, borderRadius: '4px', height: '36px', color: theme.palette.text.primary,
+                        borderLeft: isSubSelected ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
                         '&.Mui-selected': {
-                          bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.12) : alpha('#222121', 0.08),
-                          color: 'primary.main',
-                          '& .MuiListItemIcon-root': { color: 'primary.main' },
-                          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.2) : alpha('#242323', 0.15) }
+                          bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.primary.main, 0.04),
+                          color: theme.palette.primary.main,
+                          '& .MuiListItemIcon-root': { color: theme.palette.primary.main },
+                          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.16) : alpha(theme.palette.primary.main, 0.08) }
                         },
-                        '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.04) : alpha('#000000', 0.06) }
+                        '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.03) : alpha('#000000', 0.03) }
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: '32px', color: isSubSelected ? theme.palette.primary.main : theme.palette.text.primary }}>
+                      <ListItemIcon sx={{ minWidth: '28px', color: isSubSelected ? theme.palette.primary.main : theme.palette.text.secondary }}>
                         {subItem.icon}
                       </ListItemIcon>
-                      <ListItemText primary={subItem.text} slotProps={{ primary: { sx: { fontSize: '13px', fontWeight: isSubSelected ? 700 : 500 } } }} />
+                      <ListItemText primary={subItem.text} slotProps={{ primary: { sx: { fontSize: '12.5px', fontWeight: isSubSelected ? 600 : 500 } } }} />
                     </ListItemButton>
                   </ListItem>
                 );
               })}
             </List>
           </Collapse>
+        </List>
+      </Box>
+
+      {/* KHỐI ĐĂNG XUẤT PHẲNG ĐỒNG BỘ Ở ĐÁY */}
+      <Box sx={{ p: 0.75, borderTop: `1px solid ${theme.palette.customBg.border}` }}>
+        <List disablePadding>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={handleLogout}
+              sx={{
+                mx: 0,
+                borderRadius: '4px',
+                py: 1,
+                color: theme.palette.error.main,
+                borderLeft: '3px solid transparent',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.06),
+                }
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: '32px', pl: 0.5, color: theme.palette.error.main }}>
+                <LogoutIcon sx={{ fontSize: 20 }} />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Đăng xuất" 
+                slotProps={{ primary: { sx: { fontSize: '13.5px', fontWeight: 600 } } }} 
+              />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Box>
     </Drawer>

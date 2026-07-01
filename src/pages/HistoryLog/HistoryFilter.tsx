@@ -1,6 +1,4 @@
-// src/pages/HistoryLog/HistoryFilter.tsx
-
-import { Paper, Typography, Grid, FormControl, InputLabel, Select, MenuItem, TextField } from '@mui/material';
+import { Paper, Typography, Grid, FormControl, InputLabel, Select, MenuItem, TextField, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 
@@ -8,18 +6,22 @@ interface HistoryFilterProps {
   filterGate: string;
   filterDate: string;
   searchCar: string;
+  filterStatus: string; // Thêm prop quản lý trạng thái xe
   onGateChange: (value: string) => void;
   onDateChange: (value: string) => void;
   onSearchChange: (value: string) => void;
+  onStatusChange: (value: string) => void; // Thêm callback đổi trạng thái
 }
 
 export default function HistoryFilter({
   filterGate,
   filterDate,
   searchCar,
+  filterStatus,
   onGateChange,
   onDateChange,
   onSearchChange,
+  onStatusChange,
 }: HistoryFilterProps) {
   const theme = useTheme();
 
@@ -27,20 +29,55 @@ export default function HistoryFilter({
     <Paper 
       elevation={0} 
       sx={{ 
-        p: 2.5, 
-        mb: 4, 
+        p: 2, 
+        mb: 2, // Giảm margin-bottom từ 4 xuống 2 để khít với bảng dữ liệu
         bgcolor: theme.palette.customBg.card, 
         border: `1px solid ${theme.palette.customBg.border}`, 
-        borderRadius: 3,
-        boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.02)'
+        borderRadius: '4px', // Đồng bộ vuông vức chuẩn Enterprise
+        boxShadow: 'none' // Loại bỏ shadow đổ bóng đổ rườm rà
       }}
     >
-      <Typography variant="subtitle2" sx={{ color: theme.palette.primary.main, mb: 2.5, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
-        <FilterAltIcon fontSize="small" /> BỘ LỌC KIỂM SOÁT DỮ LIỆU
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary, display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' }}>
+          <FilterAltIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> Bộ lọc kiểm soát dữ liệu
+        </Typography>
+      </Box>
       
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 4 }}>
+      <Grid container spacing={1.5}> {/* Thu hẹp khoảng cách giữa các ô nhập liệu */}
+        
+        {/* 1. Ô TÌM KIẾM NHANH (Nên đưa lên đầu tiên vì bảo vệ dùng nhiều nhất) */}
+        <Grid size={{ xs: 12, sm: 3 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Tìm kiếm nhanh"
+            placeholder="Biển số / CCCD / Tên tài xế..."
+            value={searchCar}
+            onChange={(e) => onSearchChange(e.target.value)}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
+          />
+        </Grid>
+
+        {/* 2. CHỌN TRẠNG THÁI (Mới bổ sung cho chuẩn nghiệp vụ bãi xe) */}
+        <Grid size={{ xs: 12, sm: 3 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel id="status-select-label" sx={{ color: theme.palette.text.secondary }}>Trạng thái xe</InputLabel>
+            <Select
+              labelId="status-select-label"
+              value={filterStatus}
+              label="Trạng thái xe"
+              onChange={(e) => onStatusChange(e.target.value)}
+              sx={{ color: theme.palette.text.primary, borderRadius: '4px' }}
+            >
+              <MenuItem value="all">Tất cả trạng thái</MenuItem>
+              <MenuItem value="checked_in">Trong bến</MenuItem>
+              <MenuItem value="checked_out">Đã xuất bến</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* 3. CHỌN CỔNG / LÀN */}
+        <Grid size={{ xs: 12, sm: 3 }}>
           <FormControl fullWidth size="small">
             <InputLabel id="gate-select-label" sx={{ color: theme.palette.text.secondary }}>Chọn Cổng/Làn</InputLabel>
             <Select
@@ -48,7 +85,7 @@ export default function HistoryFilter({
               value={filterGate}
               label="Chọn Cổng/Làn"
               onChange={(e) => onGateChange(e.target.value)}
-              sx={{ color: theme.palette.text.primary, borderRadius: 2 }}
+              sx={{ color: theme.palette.text.primary, borderRadius: '4px' }}
             >
               <MenuItem value="all">Tất cả các cổng</MenuItem>
               <MenuItem value="gate-001">Cổng vào 01</MenuItem>
@@ -56,7 +93,9 @@ export default function HistoryFilter({
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+
+        {/* 4. CHỌN NGÀY RA VÀO */}
+        <Grid size={{ xs: 12, sm: 3 }}>
           <TextField
             fullWidth
             size="small"
@@ -65,20 +104,10 @@ export default function HistoryFilter({
             value={filterDate}
             onChange={(e) => onDateChange(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '4px' } }}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Biển số / CCCD / Tên tài xế"
-            placeholder="Tìm kiếm nhanh..."
-            value={searchCar}
-            onChange={(e) => onSearchChange(e.target.value)}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
-        </Grid>
+
       </Grid>
     </Paper>
   );
