@@ -1,5 +1,7 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "");
+
 export async function submitVehicleRegistration(
   licensePlate: string,
   images: { plate: { file: File | null }; vehicle: { file: File | null } },
@@ -17,7 +19,7 @@ export async function submitVehicleRegistration(
   formDataToSend.append("frame_image", images.vehicle.file);
 
   const response = await axios.post(
-    "http://localhost:8000/mock/aibox/lpr-event",
+    `${API_BASE_URL}/mock/aibox/lpr-event`,
     formDataToSend,
     {
       headers: {

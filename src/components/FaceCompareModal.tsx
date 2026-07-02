@@ -94,8 +94,14 @@ export default function FaceCompareModal({
   };
 
   const handleCompareFaces = async () => {
-    if (!liveFaceFile) return alert("Vui lòng chọn hoặc chụp ảnh thực tế!");
-    if (!eventUid) return alert("Không tìm thấy Event UID hợp lệ!");
+    if (!liveFaceFile) {
+      showToast("Vui lòng chọn hoặc chụp ảnh thực tế!", "warning");
+      return;
+    }
+    if (!eventUid) {
+      showToast("Không tìm thấy Event UID hợp lệ!", "warning");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("live_face_image", liveFaceFile);

@@ -1,4 +1,3 @@
-// VehicleInPage.tsx
 import { useState, useRef } from "react";
 import type { ChangeEvent, SyntheticEvent } from "react";
 import {
@@ -12,7 +11,6 @@ import PrintIcon from "@mui/icons-material/Print";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import type { XitecLog } from "../../types/vehicle";
@@ -22,7 +20,9 @@ import HistoryLog from "./components/HistoryLog";
 import FaceCompareModal from "../../components/FaceCompareModal";
 import CustomButton from "../../components/CustomButton";
 import axiosInstance from "../../configs/axios";
-const API_URL = "http://127.0.0.1:8000/ocr/cccd";
+import ToastNotification, { type ToastState } from "../../components/ToastNotification";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "");
 
 export default function VehicleInPage() {
   const [vehicleData, setVehicleData] = useState<XitecLog | null>(null);
@@ -86,7 +86,7 @@ export default function VehicleInPage() {
           nationalIdImage: imageUrl,
           licensePlate: linkedSession?.expected_plate_number || "CHƯA GẮN XE",
           licensePlateImage:
-            "http://127.0.0.1:8000/static/media/live_plate.jpg",
+            `${API_BASE_URL}/static/media/live_plate.jpg`,
           driverFaceImage:
             ocrData?.cccd_face_image_url || "data:image/png;base64,...",
           entryTime: linkedSession?.created_at
@@ -108,7 +108,7 @@ export default function VehicleInPage() {
       console.log("message =", error.message);
       console.log("response =", error.response);
       console.log("request =", error.request);
-      alert("Lỗi kết nối máy chủ khi xử lý OCR.");
+      showToast("Lỗi kết nối máy chủ khi xử lý OCR.", "error");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setIsLoading(false);
@@ -271,6 +271,11 @@ export default function VehicleInPage() {
         vehicleData={vehicleData}
         eventUid={eventUid}
         onCompareSuccess={() => setSessionStatus("SUCCESS_MATCH")}
+      />
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Box>
   );

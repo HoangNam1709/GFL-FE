@@ -72,7 +72,10 @@ export default function VehicleRegistrationPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!formData.licensePlate.trim()) return setErrors({ licensePlate: "Biển số xe không được để trống!" });
-    if (!images.plate.file || !images.vehicle.file) return alert("Vui lòng tải lên Ảnh Biển Số và Ảnh Toàn Xe!");
+    if (!images.plate.file || !images.vehicle.file) {
+      showToast("Vui lòng tải lên Ảnh Biển Số và Ảnh Toàn Xe!", "warning");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -82,7 +85,7 @@ export default function VehicleRegistrationPage() {
       setEventUid(result.event_uid);
       setIsOpenPersonModal(true);
     } catch (error: any) {
-      alert(error.message || "Không thể kết nối đến máy chủ API bốt xe!");
+      showToast(error.message || "Không thể kết nối đến máy chủ API bốt xe!", "error");
     } finally {
       setIsLoading(false);
     }

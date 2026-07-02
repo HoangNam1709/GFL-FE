@@ -39,7 +39,7 @@ export default function LoginPage() {
       setLoading(true);
 
       const response = await axios.post(
-        "http://localhost:8000/api/v1/auth/dev-login",
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/dev-login`,
         { username, password }
       );
 
