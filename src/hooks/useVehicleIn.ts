@@ -3,15 +3,27 @@ import type { ChangeEvent, SyntheticEvent } from 'react';
 import axios from 'axios';
 import type { XitecLog } from '../types/vehicle'; // Bạn kiểm tra lại đường dẫn import loại này cho đúng
 import { useNavigate } from 'react-router-dom';
+import type { ToastState } from '../components/ToastNotification';
 
-const API_URL = "http://127.0.0.1:8000/ocr/cccd";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+const API_URL = `${API_BASE_URL}/ocr/cccd`;
 
-export function useVehicleIn() {
+type ToastMessageHandler = (message: string, severity?: ToastState['severity']) => void;
+
+export function useVehicleIn(showToast?: ToastMessageHandler) {
   const [vehicleData, setVehicleData] = useState<XitecLog | null>(null);
   const [printHistory, setPrintHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const notify = (message: string, severity: ToastState['severity'] = 'success') => {
+    if (showToast) {
+      showToast(message, severity);
+    } else {
+      console.warn(message);
+    }
+  };
+
   const handleUpdateVehicleField = (field: keyof XitecLog, value: string) => {
     if (vehicleData) {
       setVehicleData({ ...vehicleData, [field]: value });
@@ -57,20 +69,20 @@ export function useVehicleIn() {
 
         if (response.data.status !== "SUCCESS") {
           console.warn("OCR trả về data nhưng status khác SUCCESS:", response.data.status);
-          alert(`Backend trả về trạng thái ${response.data.status}, nhưng vẫn nhận được dữ liệu CCCD.`);
+          notify(`Backend trả về trạng thái ${response.data.status}, nhưng vẫn nhận được dữ liệu CCCD.`, 'warning');
         } else {
           console.log("Xử lý OCR dữ liệu CCCD thành công!");
         }
       } else {
         console.warn("OCR response không có data:", response.data);
-        alert(`Backend không trả về dữ liệu OCR hợp lệ. Trạng thái: ${response.data?.status || 'unknown'}`);
+        notify(`Backend không trả về dữ liệu OCR hợp lệ. Trạng thái: ${response.data?.status || 'unknown'}`, 'warning');
       }
     } catch (error) {
       console.error("❌ Lỗi thực tế xuất hiện:", error);
       if (axios.isAxiosError(error)) {
         console.error("Chi tiết lỗi mạng:", error.response?.data || error.message);
       }
-      alert("Hệ thống gặp lỗi xử lý dữ liệu hoặc nghẽn mạng CORS!");
+      notify("Hệ thống gặp lỗi xử lý dữ liệu hoặc nghẽn mạng CORS!", 'error');
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
@@ -133,7 +145,7 @@ export function useVehicleIn() {
       ...printHistory,
     ]);
     
-    alert("Xác nhận xe vào và lưu lịch sử thành công!");
+    notify("Xác nhận xe vào và lưu lịch sử thành công!", 'success');
     setVehicleData(null);
 
     navigate('/log-history');

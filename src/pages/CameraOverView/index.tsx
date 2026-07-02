@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -12,15 +12,17 @@ import {
   MenuItem, 
   Paper,
   Tabs,
-  Tab
+  Tab,
+  Skeleton
 } from '@mui/material';
-import Grid from '@mui/material/Grid'; // Sử dụng Grid thế hệ mới đồng bộ hệ thống prop size
+import Grid from '@mui/material/Grid'; 
 import { useNavigate } from 'react-router-dom';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 
+// Định nghĩa Interface dữ liệu cấu trúc
 interface CameraItem {
   id: string;
   name: string;
@@ -29,25 +31,20 @@ interface CameraItem {
   streamUrl: string;
 }
 
+// 📌 TÁCH BIỆT MOCK DATA: Giúp code gọn gàng, sẵn sàng cho việc fetch API sau này
 const CAMERA_LIST: CameraItem[] = [
-  // Sân bay Nội Bài - HAN
   { id: 'han-in-1', name: 'HAN - Cổng Vào Làn 01', airport: 'HAN', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=500' },
   { id: 'han-in-2', name: 'HAN - Cổng Vào Làn 02', airport: 'HAN', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=500' },
   { id: 'han-in-3', name: 'HAN - Cổng Vào Làn 03', airport: 'HAN', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?q=80&w=500' },
   { id: 'han-out-1', name: 'HAN - Cổng Ra Làn 01', airport: 'HAN', type: 'OUT', streamUrl: 'https://images.unsplash.com/photo-1516594709406-e8a17a1537e6?q=80&w=500' },
   { id: 'han-out-2', name: 'HAN - Cổng Ra Làn 02', airport: 'HAN', type: 'OUT', streamUrl: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?q=80&w=500' },
   { id: 'han-out-3', name: 'HAN - Cổng Ra Làn 03', airport: 'HAN', type: 'OUT', streamUrl: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?q=80&w=500' },
-  // Sân bay Tân Sơn Nhất - SGN
   { id: 'sgn-in-1', name: 'SGN - Cổng Vào Làn 01', airport: 'SGN', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?q=80&w=500' },
   { id: 'sgn-out-1', name: 'SGN - Cổng Ra Làn 01', airport: 'SGN', type: 'OUT', streamUrl: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?q=80&w=500' },
-  // Sân bay Đà Nẵng - DAD
   { id: 'dad-in-1', name: 'DAD - Cổng Vào Làn 01', airport: 'DAD', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?q=80&w=500' },
   { id: 'dad-out-1', name: 'DAD - Cổng Ra Làn 01', airport: 'DAD', type: 'OUT', streamUrl: 'https://images.unsplash.com/photo-1516594709406-e8a17a1537e6?q=80&w=500' },
-  // Sân bay Cam Ranh - CXR
   { id: 'cxr-out-1', name: 'CXR - Cổng Ra Giám Sát', airport: 'CXR', type: 'OUT', streamUrl: 'https://images.unsplash.com/photo-1516594709406-e8a17a1537e6?q=80&w=500' },
-  // Sân bay Cát Bi - HPH
   { id: 'hph-in-1', name: 'HPH - Cổng Vào Xe Khách', airport: 'HPH', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=500' },
-  // Sân bay Phú Quốc - PQC
   { id: 'pqc-in-1', name: 'PQC - Cổng Vào An Ninh', airport: 'PQC', type: 'IN', streamUrl: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?q=80&w=500' },
 ];
 
@@ -57,9 +54,16 @@ export default function CameraOverviewPage() {
 
   const [selectedAirport, setSelectedAirport] = useState<string>('HAN');
   const [gateType, setGateType] = useState<'IN' | 'OUT'>('IN');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Giả lập hiệu ứng tải luồng Stream mượt mà khi đổi Bộ lọc (Filter)
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 400);
+    return () => clearTimeout(timer);
+  }, [selectedAirport, gateType]);
 
   const handleSelectCamera = (cam: CameraItem) => {
-    console.log(`Truy cập giám sát [${cam.type}] chi tiết cổng: ${cam.id}`);
     if (cam.type === 'IN') {
       navigate('/vehicle-in', { state: { gateId: cam.id, airport: selectedAirport } });
     } else {
@@ -90,13 +94,14 @@ export default function CameraOverviewPage() {
         <Box sx={{ width: '100%' }}>
           <Typography
             variant="h5"
+            component="h1"
             sx={{
               color: theme.palette.primary.main,
               fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' }
+              fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.4rem' }
             }}
           >
             <VideocamIcon fontSize="large" /> TRUNG TÂM GIÁM SÁT STREAM CAMERA REAL-TIME
@@ -111,7 +116,6 @@ export default function CameraOverviewPage() {
           sx={{
             width: { xs: '100%', md: 'auto' },
             minWidth: { xs: '100%', md: 260 },
-            alignSelf: { xs: 'stretch', md: 'center' }
           }}
         >
           <InputLabel
@@ -121,7 +125,7 @@ export default function CameraOverviewPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 0.5,
-              backgroundColor: theme.palette.background.default, // Kế thừa an toàn nền hệ thống
+              backgroundColor: theme.palette.background.default, 
               paddingRight: '6px',
             }}
           >
@@ -175,15 +179,30 @@ export default function CameraOverviewPage() {
         </Tabs>
       </Box>
 
-      {/* LƯỚI HIỂN THỊ CAMERA SAU KHI LỌC */}
-      {filteredCameras.length === 0 ? (
+      {/* LƯỚI HIỂN THỊ CAMERA - TÍCH HỢP HIỆU ỨNG SKELETON LOADING */}
+      {isLoading ? (
+        <Grid container spacing={3}>
+          {[1, 2, 3].map((n) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={n}>
+              <Card sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, boxShadow: 'none' }}>
+                <Skeleton variant="rectangular" width="100%" height={220} animation="wave" />
+                <CardContent sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Skeleton variant="text" width="60%" height={20} />
+                  <Skeleton variant="text" width="20%" height={20} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      ) : filteredCameras.length === 0 ? (
         <Paper 
           sx={{ 
             p: 5, 
             textAlign: 'center', 
             bgcolor: theme.palette.background.paper, 
             border: `1px solid ${theme.palette.divider}`, 
-            borderRadius: 2 
+            borderRadius: 2,
+            boxShadow: 'none'
           }}
         >
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
@@ -204,7 +223,7 @@ export default function CameraOverviewPage() {
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[4] // Sử dụng shadow token của hệ thống thay vì mã hóa rgba cứng
+                    boxShadow: theme.shadows[4] 
                   }
                 }}
               >
@@ -224,11 +243,12 @@ export default function CameraOverviewPage() {
                     }}
                   />
 
-                  {/* Thanh thông tin dưới chân camera */}
+                  {/* Thanh thông tin chân Card - Sửa lỗi triệt tiêu padding đè */}
                   <CardContent 
                     sx={{ 
                       p: 1.5, 
-                      bgcolor: theme.palette.action.hover, // Sử dụng màu nền hover chuẩn của Theme
+                      '&:last-child': { pb: 1.5 }, // 🌟 TRIỆT TIÊU PADDING 24PX MẶC ĐỊNH CỦA MUI
+                      bgcolor: theme.palette.action.hover, 
                       display: 'flex', 
                       justifyContent: 'space-between', 
                       alignItems: 'center' 
@@ -243,7 +263,7 @@ export default function CameraOverviewPage() {
                       <Box
                         sx={{
                           width: 8, height: 8, borderRadius: '50%',
-                          bgcolor: theme.palette.success.main, // Chuyển từ mã màu '#4caf50' sang token an toàn
+                          bgcolor: theme.palette.success.main, 
                           animation: 'pulse 1.5s infinite alternate',
                           '@keyframes pulse': {
                             '0%': { opacity: 0.4 },

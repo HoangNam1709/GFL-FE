@@ -20,6 +20,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 
 import CustomButton from '../../components/CustomButton';
+import ToastNotification, { type ToastState } from '../../components/ToastNotification';
 
 const USER_TYPES = [
   { value: 'Khach', label: 'Khách vãng lai / Đối tác' },
@@ -30,6 +31,11 @@ const USER_TYPES = [
 export default function UserRegistrationPage() {
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [toast, setToast] = useState<ToastState>({ open: false, message: '', severity: 'success' });
+
+  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+    setToast({ open: true, message, severity });
+  };
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -87,7 +93,7 @@ export default function UserRegistrationPage() {
     // Giả lập xử lý lưu trữ dữ liệu nghiệp vụ
     setTimeout(() => {
       setIsLoading(false);
-      alert(`Đăng ký thành công thông tin khách: ${formData.fullName}`);
+      showToast(`Đăng ký thành công thông tin khách: ${formData.fullName}`, 'success');
       setFormData({
         fullName: '',
         idCard: '',
@@ -293,6 +299,11 @@ export default function UserRegistrationPage() {
 
         </Grid>
       </Box>
+
+      <ToastNotification
+        toast={toast}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </Box>
   );
 }

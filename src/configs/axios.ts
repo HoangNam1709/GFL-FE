@@ -4,8 +4,8 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
-// 1. Xác định URL Backend dựa trên môi trường chạy (Development hoặc Production)
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// 1. Xác định URL Backend dựa trên giá trị từ file .env.development
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
