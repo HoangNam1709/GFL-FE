@@ -34,7 +34,6 @@ interface FaceCompareModalProps {
   defaultLiveFace?: ImageState;
 }
 
-
 export default function FaceCompareModal({
   open,
   onClose,
@@ -50,32 +49,27 @@ export default function FaceCompareModal({
   const [liveFaceFile, setLiveFaceFile] = useState<File | null>(null);
   const [liveFacePreview, setLiveFacePreview] = useState<string>("");
   const [compareResult, setCompareResult] = useState<any>(null);
-  // 🌟 KHỞI TẠO STATE CHO THÔNG BÁO DÙNG CHUNG
   const [toast, setToast] = useState<ToastState>({
     open: false,
     message: '',
     severity: 'success'
   });
 
-  // Hàm tiện ích hiển thị nhanh thông báo
   const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
     setToast({ open: true, message, severity });
   };
-  // Đồng bộ ảnh từ defaultLiveFace vào state khi modal được mở
+
   useEffect(() => {
     if (open && defaultLiveFace?.file) {
       setLiveFaceFile(defaultLiveFace.file);
       setLiveFacePreview(defaultLiveFace.preview);
     } else if (!open) {
-      // Reset kết quả khi đóng modal để lần sau mở lại sạch sẽ
       setCompareResult(null);
     }
   }, [open, defaultLiveFace]);
 
-  // Cleanup ObjectURL khi thay đổi ảnh hoặc unmount để tránh rò rỉ bộ nhớ
   useEffect(() => {
     return () => {
-      // Chỉ revoke nếu ảnh preview tự tạo trong modal (khác với ảnh từ prop truyền vào)
       if (liveFacePreview && liveFacePreview !== defaultLiveFace?.preview) {
         URL.revokeObjectURL(liveFacePreview);
       }
@@ -120,18 +114,17 @@ export default function FaceCompareModal({
       );
 
       setCompareResult(response.data);
-      const compareInfo =
-        response.data?.data?.compare || response.data?.compare;
+      const compareInfo = response.data?.data?.compare || response.data?.compare;
 
-      if (
-        compareInfo?.result === "MATCH" ||
-        response.data?.status === "SUCCESS"
-      ) {
-        onCompareSuccess();
+      // 🟢 ĐÃ SỬA LOGIC: Kiểm tra chính xác chuỗi kết quả trùng khớp nghiệp vụ sinh trắc học
+      if (compareInfo?.result === "MATCH") {
         showToast("Xác thực khuôn mặt trùng khớp thành công!", "success");
+        onCompareSuccess();
       } else {
+        // Trả thông báo lỗi màu đỏ khi kết quả là NO_MATCH hoặc các trạng thái không khớp khác
         showToast(
-          `Đối sánh hoàn tất! Kết quả: ${compareInfo?.result || "Không khớp"}`, "error"
+          `Đối sánh hoàn tất! Kết quả: ${compareInfo?.result === "NO_MATCH" ? "Không trùng khớp khuôn mặt" : (compareInfo?.result || "Không khớp")}`, 
+          "error"
         );
       }
     } catch (error) {
@@ -143,23 +136,12 @@ export default function FaceCompareModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle
-        sx={{ fontWeight: "bold", color: theme.palette.primary.main }}
-      >
+      <DialogTitle sx={{ fontWeight: "bold", color: theme.palette.primary.main }}>
         HỆ THỐNG ĐỐI SÁNH XÁC THỰC KHUÔN MẶT TÀI XẾ
       </DialogTitle>
       <DialogContent dividers>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 3,
-            mt: 1,
-          }}
-        >
-          <Box
-            sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}
-          >
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 3, mt: 1 }}>
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField
               label="Số CCCD"
               fullWidth
@@ -188,19 +170,8 @@ export default function FaceCompareModal({
             />
 
             {compareResult && (
-              <Box
-                sx={{
-                  p: 2,
-                  bgcolor: "action.hover",
-                  borderRadius: 1,
-                  border: "1px solid #ccc",
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  color="success.main"
-                  sx={{ fontWeight: "bold" }}
-                >
+              <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1, border: "1px solid #ccc" }}>
+                <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: "bold" }}>
                   Kết quả đối sánh từ Server:
                 </Typography>
                 <Typography variant="body2">
@@ -213,52 +184,29 @@ export default function FaceCompareModal({
                   variant="body2"
                   sx={{
                     fontWeight: "bold",
-                    color:
-                      compareResult?.data?.compare?.result === "MATCH"
-                        ? "#4caf50"
-                        : "#f44336",
+                    color: compareResult?.data?.compare?.result === "MATCH" ? "#4caf50" : "#f44336",
                   }}
                 >
-                  - Kết luận:{" "}
-                  {compareResult?.data?.compare?.result || "Chờ duyệt"}
+                  - Kết luận: {compareResult?.data?.compare?.result || "Chờ duyệt"}
                 </Typography>
               </Box>
             )}
           </Box>
 
-          <Box
-            sx={{
-              width: { xs: "100%", md: "280px" },
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              alignItems: "center",
-            }}
-          >
+          <Box sx={{ width: { xs: "100%", md: "280px" }, display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
             <Box sx={{ textAlign: "center", width: "100%" }}>
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: "bold", display: "block", mb: 0.5 }}
-              >
+              <Typography variant="caption" sx={{ fontWeight: "bold", display: "block", mb: 0.5 }}>
                 Ảnh chân dung CCCD
               </Typography>
               <img
                 src={vehicleData?.driverFaceImage}
                 alt="CCCD Face"
-                style={{
-                  width: "150px",
-                  height: "180px",
-                  objectFit: "cover",
-                  borderRadius: "4px",
-                }}
+                style={{ width: "150px", height: "180px", objectFit: "cover", borderRadius: "4px" }}
               />
             </Box>
 
             <Box sx={{ textAlign: "center", width: "100%" }}>
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: "bold", display: "block", mb: 0.5 }}
-              >
+              <Typography variant="caption" sx={{ fontWeight: "bold", display: "block", mb: 0.5 }}>
                 Ảnh thực tế (Live Face)
               </Typography>
               <Box
@@ -275,17 +223,14 @@ export default function FaceCompareModal({
                   cursor: "pointer",
                   overflow: "hidden",
                   bgcolor: "action.hover",
+                  margin: "0 auto",
                 }}
               >
                 {liveFacePreview ? (
                   <img
                     src={liveFacePreview}
                     alt="Live Face"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 ) : (
                   <CloudUploadIcon color="primary" />
@@ -309,13 +254,7 @@ export default function FaceCompareModal({
         <Button
           variant="contained"
           color="primary"
-          startIcon={
-            isComparing ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <VerifiedUserIcon />
-            )
-          }
+          startIcon={isComparing ? <CircularProgress size={20} color="inherit" /> : <VerifiedUserIcon />}
           onClick={handleCompareFaces}
           disabled={isComparing}
           sx={{ color: "#ffffff !important" }}
