@@ -12,16 +12,25 @@ import {
   InputAdornment,
   IconButton,
   useTheme,
+  Divider,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
+
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  generatePkcePair,
+  getDiscovery,
+  OIDC_CLIENT_ID,
+  OIDC_REDIRECT_URI,
+} from "../../configs/oidcPkce";
 
 export default function LoginPage() {
   const theme = useTheme();
   const { login } = useAuth();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,16 +40,22 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password)
-      return setError("Vui lòng điền đầy đủ tài khoản và mật khẩu!");
+
+    if (!username || !password) {
+      setError("Vui lòng nhập đầy đủ tài khoản và mật khẩu.");
+      return;
+    }
 
     try {
-      setError(null);
       setLoading(true);
+      setError(null);
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/dev-login`,
-        { username, password }
+        {
+          username,
+          password,
+        },
       );
 
       if (response.data?.access_token) {
@@ -49,7 +64,7 @@ export default function LoginPage() {
 
         login(response.data.access_token, {
           username: apiUser?.username || apiUser?.email || username,
-          role: apiUser?.roles ? apiUser.roles[0] : "guard",
+          role: apiUser?.roles?.[0] || "guard",
           organizationId: apiUser?.organization_id || "",
         });
 
@@ -61,8 +76,50 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       const detail = err.response?.data?.detail;
-      setError(typeof detail === "string" ? detail : detail?.message || "Đăng nhập thất bại");
+
+      setError(
+        typeof detail === "string"
+          ? detail
+          : detail?.message || "Đăng nhập thất bại.",
+      );
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSsoLogin = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const discovery = await getDiscovery();
+      const { verifier, challenge } = await generatePkcePair();
+      const state = crypto.randomUUID();
+      const nonce = crypto.randomUUID();
+
+      // sessionStorage: chỉ sống trong 1 tab, đủ cho vòng đời redirect này —
+      // lý do y hệt bạn đã học ở App 1 (server-side session ở đó, giờ là
+      // sessionStorage vì không có Backend đứng giữa giữ hộ).
+      sessionStorage.setItem(
+        "app2_pending_auth",
+        JSON.stringify({ state, nonce, verifier }),
+      );
+
+      const params = new URLSearchParams({
+        client_id: OIDC_CLIENT_ID,
+        response_type: "code",
+        scope: "openid profile email",
+        redirect_uri: OIDC_REDIRECT_URI,
+        state,
+        nonce,
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+      });
+
+      window.location.href = `${discovery.authorization_endpoint}?${params.toString()}`;
+    } catch (err) {
+      console.error(err);
+      setError("Không thể đăng nhập SSO.");
       setLoading(false);
     }
   };
@@ -75,23 +132,22 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         p: 2,
-        // 🌟 GIỮ LẠI ẢNH NỀN CỦA BẠN TẠI ĐÂY
-        backgroundImage: 'url("https://mianco.com.vn/wp-content/uploads/2020/02/Background-login-1024x547.jpg")', // Thay đường dẫn ảnh của bạn vào đây
+        backgroundImage:
+          'url("https://mianco.com.vn/wp-content/uploads/2020/02/Background-login-1024x547.jpg")',
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
     >
       <Card
-        sx={{ 
-          maxWidth: 400, 
-          width: "100%", 
-          boxShadow: 8, 
+        sx={{
+          maxWidth: 400,
+          width: "100%",
           borderRadius: 3,
-          // Bọc nền Card màu tối và hơi trong suốt (mờ mờ) để nhìn xuyên thấu ra ảnh nền phía sau rất đẹp
-          bgcolor: "rgba(26, 26, 26, 0.26)", 
-          backdropFilter: "blur(8px)", // Tạo hiệu ứng kính mờ (Glassmorphism)
-          border: `1px solid rgba(255, 255, 255, 0.1)`,
+          boxShadow: 8,
+          bgcolor: "rgba(26,26,26,0.26)",
+          backdropFilter: "blur(8px)",
+          border: "1px solid rgba(255,255,255,0.1)",
         }}
       >
         <CardContent
@@ -102,112 +158,79 @@ export default function LoginPage() {
             alignItems: "center",
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: "primary.main", width: 56, height: 56 }}>
-            <LockOutlinedIcon sx={{ fontSize: 32, color: "#ffffff" }} />
+          <Avatar
+            sx={{
+              m: 1,
+              width: 56,
+              height: 56,
+              bgcolor: "primary.main",
+            }}
+          >
+            <LockOutlinedIcon />
           </Avatar>
 
           <Typography
-            component="h1"
             variant="h5"
-            sx={{ 
-              fontWeight: 800, 
-              mb: 1, 
-              mt: 1.5, 
-              color: "#ffffff",
-              letterSpacing: "0.5px",
-              fontFamily: theme.typography.fontFamily
+            sx={{
+              mt: 1,
+              mb: 1,
+              fontWeight: 800,
+              color: "#fff",
+              fontFamily: theme.typography.fontFamily,
             }}
           >
             ĐĂNG NHẬP HỆ THỐNG
           </Typography>
-          <Typography variant="body2" sx={{ mb: 4, color: "rgba(255, 255, 255, 0.6)", fontWeight: 500 }}>
+
+          <Typography
+            variant="body2"
+            sx={{
+              mb: 4,
+              color: "rgba(255,255,255,0.7)",
+            }}
+          >
             Hệ thống quản lý & đối sánh xe ra vào
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ width: "100%", mb: 3, borderRadius: "8px" }}>
+            <Alert
+              severity="error"
+              sx={{
+                width: "100%",
+                mb: 3,
+              }}
+            >
               {error}
             </Alert>
           )}
 
           <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
             <TextField
-              required
               fullWidth
+              required
               label="Username"
-              autoComplete="username"
-              autoFocus
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
-              variant="outlined"
-              sx={{
-                marginBottom: "20px",
-                "& .MuiOutlinedInput-root": {
-                  color: "#ffffff",
-                  "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)", borderRadius: "8px" },
-                  "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.6)" },
-                  "&.Mui-focused fieldset": { borderColor: "primary.main" },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "rgba(255, 255, 255, 0.6)",
-                  fontSize: "15px"
-                },
-                "& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink": {
-                  color: "primary.main",
-                  fontWeight: "bold",
-                },
-                // 🌟 FIX AUTOFILL: Đổ bóng khớp với màu đặc của ruột Card (#1a1a1a) để nuốt chửng màu trắng của Chrome
-                "& input:-webkit-autofill": {
-                  WebkitBoxShadow: "0 0 0 100px #1a1a1a11 inset !important",
-                  WebkitTextFillColor: "#ffffff !important",
-                  transition: "background-color 5000s ease-in-out 0s",
-                  borderRadius: "8px",
-                },
-              }}
+              onChange={(e) => setUsername(e.target.value)}
+              sx={{ mb: 2 }}
             />
 
             <TextField
-              required
               fullWidth
+              required
               label="Mật khẩu"
               type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              variant="outlined"
-              sx={{
-                marginBottom: "15px",
-                "& .MuiOutlinedInput-root": {
-                  color: "#ffffff",
-                  "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)", borderRadius: "8px" },
-                  "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.6)" },
-                  "&.Mui-focused fieldset": { borderColor: "primary.main" },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "rgba(255, 255, 255, 0.6)",
-                  fontSize: "15px"
-                },
-                "& .MuiInputLabel-root.Mui-focused, & .MuiInputLabel-root.MuiInputLabel-shrink": {
-                  color: "primary.main",
-                  fontWeight: "bold",
-                },
-                "& input:-webkit-autofill": {
-                  WebkitBoxShadow: "0 0 0 100px #1a1a1a11 inset !important",
-                  WebkitTextFillColor: "#ffffff !important",
-                  transition: "background-color 5000s ease-in-out 0s",
-                  borderRadius: "8px",
-                },
-              }}
+              onChange={(e) => setPassword(e.target.value)}
+              sx={{ mb: 2 }}
               slotProps={{
                 input: {
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
                         edge="end"
-                        sx={{ color: "rgba(255, 255, 255, 0.6)" }}
+                        onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -218,27 +241,51 @@ export default function LoginPage() {
             />
 
             <Button
-              type="submit"
               fullWidth
+              type="submit"
               variant="contained"
-              size="large"
               disabled={loading}
               sx={{
-                mt: 3,
-                mb: 1,
-                fontWeight: "bold",
                 height: 48,
-                borderRadius: "8px",
-                color: "#fff !important",
-                fontSize: "16px",
-                letterSpacing: "0.5px"
+                borderRadius: 2,
+                fontWeight: 700,
               }}
             >
               {loading ? (
-                <CircularProgress size={24} color="inherit" />
+                <CircularProgress size={22} color="inherit" />
               ) : (
                 "ĐĂNG NHẬP"
               )}
+            </Button>
+
+            <Divider
+              sx={{
+                my: 3,
+                color: "rgba(255,255,255,0.6)",
+              }}
+            >
+              hoặc
+            </Divider>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              disabled={loading}
+              onClick={handleSsoLogin}
+              sx={{
+                height: 48,
+                borderRadius: 2,
+                color: "#fff",
+                borderColor: "rgba(255,255,255,0.4)",
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": {
+                  borderColor: "#fff",
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                },
+              }}
+            >
+              Đăng nhập bằng Microsoft Entra ID
             </Button>
           </Box>
         </CardContent>
