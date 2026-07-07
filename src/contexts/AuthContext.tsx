@@ -54,7 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 4. Xóa thông tin user thông thường
     localStorage.removeItem("user_info");
 
-    // 5. Cập nhật State về null để ép React re-render, bảo vệ Private Route ngay lập tức
+    // 5. Xóa id_token gốc của Keycloak (nếu đăng nhập qua SSO) — chỉ dọn state
+    // cục bộ ở đây. Việc đăng xuất KHỎI KEYCLOAK (RP-Initiated Logout) được
+    // thực hiện riêng ở nơi gọi logout() (xem Sidebar.tsx: performFullLogout),
+    // vì cần đọc giá trị này TRƯỚC khi xóa để redirect đúng.
+    localStorage.removeItem("sso_id_token");
+
+    // 6. Cập nhật State về null để ép React re-render, bảo vệ Private Route ngay lập tức
     setToken(null);
     setUser(null);
   };

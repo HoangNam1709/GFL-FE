@@ -115,6 +115,15 @@ export default function SsoCallbackPage() {
         console.log("========== BACKEND ==========");
         console.log(exchange.data);
 
+        // Lưu lại id_token GỐC của Keycloak (khác internal JWT) — chỉ dùng để
+        // gửi kèm id_token_hint khi logout (RP-Initiated Logout), không dùng
+        // cho việc gọi API nào khác. Đây là dấu hiệu để logout() biết "phiên
+        // này đăng nhập qua SSO, cần đăng xuất cả Keycloak khi user logout".
+        // Dùng localStorage (không phải sessionStorage) để khớp vòng đời với
+        // "token"/"user_info" — nếu không, mở tab mới rồi logout sẽ không
+        // thấy id_token này (sessionStorage chỉ sống trong 1 tab).
+        localStorage.setItem("sso_id_token", tokens.id_token);
+
         login(exchange.data.access_token, exchange.data.user);
 
         window.history.replaceState({}, "", OIDC_REDIRECT_URI);

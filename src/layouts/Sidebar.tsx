@@ -1,17 +1,31 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Drawer, Toolbar, Typography, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse, useTheme, alpha } from '@mui/material';
-import NoCrashIcon from '@mui/icons-material/NoCrash';
-import HistoryIcon from '@mui/icons-material/History';
-import SettingsIcon from '@mui/icons-material/Settings';
-import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
-import GppGoodIcon from '@mui/icons-material/GppGood';
-import LogoutIcon from '@mui/icons-material/Logout';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Drawer,
+  Toolbar,
+  Typography,
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
+  useTheme,
+  alpha,
+} from "@mui/material";
+import NoCrashIcon from "@mui/icons-material/NoCrash";
+import HistoryIcon from "@mui/icons-material/History";
+import SettingsIcon from "@mui/icons-material/Settings";
+import DirectionsRunIcon from "@mui/icons-material/DirectionsRun";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import GppGoodIcon from "@mui/icons-material/GppGood";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { useAuth } from "../contexts/AuthContext";
+import { getDiscovery } from "../configs/oidcPkce";
 
 interface SidebarProps {
   open: boolean;
@@ -29,29 +43,78 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
   const handleToggleSettings = () => setOpenSettings(!openSettings);
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Đọc TRƯỚC khi gọi logout() — vì logout() sẽ xóa key này khỏi localStorage.
+    // Có giá trị này = phiên đăng nhập qua SSO (Keycloak), không có = dev-login.
+    const ssoIdToken = localStorage.getItem("sso_id_token");
+
     localStorage.clear();
     logout();
-    navigate('/login');
+
+    if (!ssoIdToken) {
+      // Đăng nhập bằng dev-login (username/password nội bộ) — không có
+      // session Keycloak nào để đăng xuất, giữ nguyên hành vi cũ.
+      navigate("/login");
+      return;
+    }
+
+    // Đăng nhập qua SSO — cần đăng xuất cả session Keycloak (RP-Initiated
+    // Logout), nếu không, bấm "Đăng nhập SSO" lần sau sẽ tự động đăng nhập
+    // lại mà không hỏi mật khẩu (session Keycloak vẫn còn sống trên trình
+    // duyệt), gây hiểu lầm là "logout không có tác dụng".
+    try {
+      const discovery = await getDiscovery();
+      const params = new URLSearchParams({
+        id_token_hint: ssoIdToken,
+        post_logout_redirect_uri: `${window.location.origin}/login`,
+      });
+
+      if (discovery.end_session_endpoint) {
+        window.location.href = `${discovery.end_session_endpoint}?${params.toString()}`;
+        return; // dừng ở đây — trình duyệt sẽ điều hướng sang Keycloak rồi quay lại /login
+      }
+    } catch (err) {
+      console.error("Không đăng xuất được khỏi Keycloak:", err);
+      // Không chặn user lại — vẫn cho về /login dù đăng xuất IdP thất bại,
+      // để tránh user bị kẹt không thoát ra được màn hình hiện tại.
+    }
+
+    navigate("/login");
   };
 
   const menuItems = [
-    { text: 'Tổng Quan Camera', path: '/camera-overview', icon: <VideocamIcon sx={{ fontSize: 20 }} /> },
-    { text: 'Lịch Sử Ra Vào', path: '/log-history', icon: <HistoryIcon sx={{ fontSize: 20 }} /> },
-    { text: 'Đăng Ký Xe', path: '/register-car', icon: <NoCrashIcon sx={{ fontSize: 20 }} /> },
-    { text: 'Đăng Ký Người', path: '/people-register', icon: <DirectionsRunIcon sx={{ fontSize: 20 }} /> },
+    {
+      text: "Tổng Quan Camera",
+      path: "/camera-overview",
+      icon: <VideocamIcon sx={{ fontSize: 20 }} />,
+    },
+    {
+      text: "Lịch Sử Ra Vào",
+      path: "/log-history",
+      icon: <HistoryIcon sx={{ fontSize: 20 }} />,
+    },
+    {
+      text: "Đăng Ký Xe",
+      path: "/register-car",
+      icon: <NoCrashIcon sx={{ fontSize: 20 }} />,
+    },
+    {
+      text: "Đăng Ký Người",
+      path: "/people-register",
+      icon: <DirectionsRunIcon sx={{ fontSize: 20 }} />,
+    },
   ];
 
   const settingSubItems = [
-    { 
-      text: 'Quản lý Tài khoản', 
-      path: '/system-management/users-management', 
-      icon: <ManageAccountsIcon fontSize="small" /> 
+    {
+      text: "Quản lý Tài khoản",
+      path: "/system-management/users-management",
+      icon: <ManageAccountsIcon fontSize="small" />,
     },
-    { 
-      text: 'Phân quyền & Vai trò', 
-      path: '/system-management/permissions', 
-      icon: <GppGoodIcon fontSize="small" /> 
+    {
+      text: "Phân quyền & Vai trò",
+      path: "/system-management/permissions",
+      icon: <GppGoodIcon fontSize="small" />,
     },
   ];
 
@@ -63,29 +126,44 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
       sx={{
         width: open ? drawerWidth : 0,
         flexShrink: 0,
-        transition: (t) => t.transitions.create('width', {
-          easing: t.transitions.easing.sharp,
-          duration: t.transitions.duration.enteringScreen,
-        }),
+        transition: (t) =>
+          t.transitions.create("width", {
+            easing: t.transitions.easing.sharp,
+            duration: t.transitions.duration.enteringScreen,
+          }),
         [`& .MuiDrawer-paper`]: {
           width: drawerWidth,
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
           bgcolor: theme.palette.customBg.card,
           color: theme.palette.text.primary,
           borderRight: `1px solid ${theme.palette.customBg.border}`,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
       <Toolbar />
-      <Toolbar sx={{ justifyContent: 'flex-start', px: '20px !important', borderBottom: `1px solid ${theme.palette.customBg.border}`, minHeight: '48px !important' }}>
-        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700, letterSpacing: '1px' }}>
+      <Toolbar
+        sx={{
+          justifyContent: "flex-start",
+          px: "20px !important",
+          borderBottom: `1px solid ${theme.palette.customBg.border}`,
+          minHeight: "48px !important",
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            color: theme.palette.text.secondary,
+            fontWeight: 700,
+            letterSpacing: "1px",
+          }}
+        >
           HỆ THỐNG ĐIỀU HÀNH
         </Typography>
       </Toolbar>
 
-      <Box sx={{ overflow: 'auto', mt: 1, flexGrow: 1 }}>
+      <Box sx={{ overflow: "auto", mt: 1, flexGrow: 1 }}>
         <List sx={{ p: 0 }}>
           {/* MENU CHÍNH ĐƠN CẤP */}
           {menuItems.map((item) => {
@@ -96,24 +174,63 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
                   onClick={() => navigate(item.path)}
                   selected={isSelected}
                   sx={{
-                    mx: 0.75, borderRadius: '4px', mb: 0.5, py: 1, px: 1.5, color: theme.palette.text.primary,
-                    borderLeft: isSelected ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent', // Thanh màu chỉ định bên cạnh menu active
-                    '&.Mui-selected': {
-                      bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.06),
+                    mx: 0.75,
+                    borderRadius: "4px",
+                    mb: 0.5,
+                    py: 1,
+                    px: 1.5,
+                    color: theme.palette.text.primary,
+                    borderLeft: isSelected
+                      ? `3px solid ${theme.palette.primary.main}`
+                      : "3px solid transparent", // Thanh màu chỉ định bên cạnh menu active
+                    "&.Mui-selected": {
+                      bgcolor:
+                        theme.palette.mode === "dark"
+                          ? alpha(theme.palette.primary.main, 0.12)
+                          : alpha(theme.palette.primary.main, 0.06),
                       color: theme.palette.primary.main,
-                      '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.18) : alpha(theme.palette.primary.main, 0.1) },
-                      '& .MuiListItemIcon-root': { color: theme.palette.primary.main }
+                      "&:hover": {
+                        bgcolor:
+                          theme.palette.mode === "dark"
+                            ? alpha(theme.palette.primary.main, 0.18)
+                            : alpha(theme.palette.primary.main, 0.1),
+                      },
+                      "& .MuiListItemIcon-root": {
+                        color: theme.palette.primary.main,
+                      },
                     },
-                    '&:hover': { 
-                      bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.04) : alpha('#000000', 0.04),
-                      '& .MuiListItemIcon-root': { color: theme.palette.text.primary }
-                    }
+                    "&:hover": {
+                      bgcolor:
+                        theme.palette.mode === "dark"
+                          ? alpha("#ffffff", 0.04)
+                          : alpha("#000000", 0.04),
+                      "& .MuiListItemIcon-root": {
+                        color: theme.palette.text.primary,
+                      },
+                    },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: '32px', color: isSelected ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: "32px",
+                      color: isSelected
+                        ? theme.palette.primary.main
+                        : theme.palette.text.secondary,
+                    }}
+                  >
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText primary={item.text} slotProps={{ primary: { sx: { fontSize: '13.5px', fontWeight: isSelected ? 600 : 500 } } }} />
+                  <ListItemText
+                    primary={item.text}
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontSize: "13.5px",
+                          fontWeight: isSelected ? 600 : 500,
+                        },
+                      },
+                    }}
+                  />
                 </ListItemButton>
               </ListItem>
             );
@@ -123,21 +240,53 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
           <ListItem disablePadding>
             <ListItemButton
               onClick={handleToggleSettings}
-              sx={{ 
-                mx: 0.75, borderRadius: '4px', mb: 0.5, py: 1, px: 1.5, color: theme.palette.text.primary,
-                borderLeft: '3px solid transparent',
-                '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.04) : alpha('#000000', 0.04) } 
+              sx={{
+                mx: 0.75,
+                borderRadius: "4px",
+                mb: 0.5,
+                py: 1,
+                px: 1.5,
+                color: theme.palette.text.primary,
+                borderLeft: "3px solid transparent",
+                "&:hover": {
+                  bgcolor:
+                    theme.palette.mode === "dark"
+                      ? alpha("#ffffff", 0.04)
+                      : alpha("#000000", 0.04),
+                },
               }}
             >
-              <ListItemIcon sx={{ minWidth: '32px', color: theme.palette.text.secondary }}><SettingsIcon sx={{ fontSize: 20 }} /></ListItemIcon>
-              <ListItemText primary="Quản Lý Hệ Thống" slotProps={{ primary: { sx: { fontSize: '13.5px', fontWeight: 500 } } }} />
-              {openSettings ? <ExpandLess sx={{ fontSize: 18, color: 'text.secondary' }} /> : <ExpandMore sx={{ fontSize: 18, color: 'text.secondary' }} />}
+              <ListItemIcon
+                sx={{ minWidth: "32px", color: theme.palette.text.secondary }}
+              >
+                <SettingsIcon sx={{ fontSize: 20 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Quản Lý Hệ Thống"
+                slotProps={{
+                  primary: { sx: { fontSize: "13.5px", fontWeight: 500 } },
+                }}
+              />
+              {openSettings ? (
+                <ExpandLess sx={{ fontSize: 18, color: "text.secondary" }} />
+              ) : (
+                <ExpandMore sx={{ fontSize: 18, color: "text.secondary" }} />
+              )}
             </ListItemButton>
           </ListItem>
 
           {/* KHỐI CON SỔ XUỐNG */}
           <Collapse in={openSettings} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding sx={{ pl: 4, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+            <List
+              component="div"
+              disablePadding
+              sx={{
+                pl: 4,
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.25,
+              }}
+            >
               {settingSubItems.map((subItem) => {
                 const isSubSelected = isActive(subItem.path);
                 return (
@@ -146,21 +295,58 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
                       onClick={() => navigate(subItem.path)}
                       selected={isSubSelected}
                       sx={{
-                        mx: 0.75, borderRadius: '4px', height: '36px', color: theme.palette.text.primary,
-                        borderLeft: isSubSelected ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
-                        '&.Mui-selected': {
-                          bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.primary.main, 0.04),
+                        mx: 0.75,
+                        borderRadius: "4px",
+                        height: "36px",
+                        color: theme.palette.text.primary,
+                        borderLeft: isSubSelected
+                          ? `3px solid ${theme.palette.primary.main}`
+                          : "3px solid transparent",
+                        "&.Mui-selected": {
+                          bgcolor:
+                            theme.palette.mode === "dark"
+                              ? alpha(theme.palette.primary.main, 0.1)
+                              : alpha(theme.palette.primary.main, 0.04),
                           color: theme.palette.primary.main,
-                          '& .MuiListItemIcon-root': { color: theme.palette.primary.main },
-                          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.16) : alpha(theme.palette.primary.main, 0.08) }
+                          "& .MuiListItemIcon-root": {
+                            color: theme.palette.primary.main,
+                          },
+                          "&:hover": {
+                            bgcolor:
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.primary.main, 0.16)
+                                : alpha(theme.palette.primary.main, 0.08),
+                          },
                         },
-                        '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.03) : alpha('#000000', 0.03) }
+                        "&:hover": {
+                          bgcolor:
+                            theme.palette.mode === "dark"
+                              ? alpha("#ffffff", 0.03)
+                              : alpha("#000000", 0.03),
+                        },
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: '28px', color: isSubSelected ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                      <ListItemIcon
+                        sx={{
+                          minWidth: "28px",
+                          color: isSubSelected
+                            ? theme.palette.primary.main
+                            : theme.palette.text.secondary,
+                        }}
+                      >
                         {subItem.icon}
                       </ListItemIcon>
-                      <ListItemText primary={subItem.text} slotProps={{ primary: { sx: { fontSize: '12.5px', fontWeight: isSubSelected ? 600 : 500 } } }} />
+                      <ListItemText
+                        primary={subItem.text}
+                        slotProps={{
+                          primary: {
+                            sx: {
+                              fontSize: "12.5px",
+                              fontWeight: isSubSelected ? 600 : 500,
+                            },
+                          },
+                        }}
+                      />
                     </ListItemButton>
                   </ListItem>
                 );
@@ -171,28 +357,41 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
       </Box>
 
       {/* KHỐI ĐĂNG XUẤT PHẲNG ĐỒNG BỘ Ở ĐÁY */}
-      <Box sx={{ p: 0.75, borderTop: `1px solid ${theme.palette.customBg.border}` }}>
+      <Box
+        sx={{
+          p: 0.75,
+          borderTop: `1px solid ${theme.palette.customBg.border}`,
+        }}
+      >
         <List disablePadding>
           <ListItem disablePadding>
             <ListItemButton
               onClick={handleLogout}
               sx={{
                 mx: 0,
-                borderRadius: '4px',
+                borderRadius: "4px",
                 py: 1,
                 color: theme.palette.error.main,
-                borderLeft: '3px solid transparent',
-                '&:hover': {
+                borderLeft: "3px solid transparent",
+                "&:hover": {
                   bgcolor: alpha(theme.palette.error.main, 0.06),
-                }
+                },
               }}
             >
-              <ListItemIcon sx={{ minWidth: '32px', pl: 0.5, color: theme.palette.error.main }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: "32px",
+                  pl: 0.5,
+                  color: theme.palette.error.main,
+                }}
+              >
                 <LogoutIcon sx={{ fontSize: 20 }} />
               </ListItemIcon>
-              <ListItemText 
-                primary="Đăng xuất" 
-                slotProps={{ primary: { sx: { fontSize: '13.5px', fontWeight: 600 } } }} 
+              <ListItemText
+                primary="Đăng xuất"
+                slotProps={{
+                  primary: { sx: { fontSize: "13.5px", fontWeight: 600 } },
+                }}
               />
             </ListItemButton>
           </ListItem>
