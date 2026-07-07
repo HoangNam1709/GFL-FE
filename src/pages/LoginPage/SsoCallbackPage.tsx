@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, CircularProgress, Typography, Alert } from "@mui/material";
+import { Alert, Box, CircularProgress, Typography } from "@mui/material";
 import axios from "axios";
 
 import {
@@ -11,6 +11,10 @@ import {
 
 import { useAuth } from "../../contexts/AuthContext";
 
+function decodeJwt(token: string) {
+  return JSON.parse(atob(token.split(".")[1]));
+}
+
 export default function SsoCallbackPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -18,61 +22,52 @@ export default function SsoCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function handleCallback() {
+    async function run() {
       try {
         console.log("========== SSO CALLBACK ==========");
 
-        // ----------------------------------------------------
-        // Lấy authorization code và state
-        // ----------------------------------------------------
+        //--------------------------------------------------
+        // Authorization Code
+        //--------------------------------------------------
+
         const params = new URLSearchParams(window.location.search);
 
         const code = params.get("code");
         const state = params.get("state");
 
-        console.log("Authorization Code:", code);
-        console.log("State:", state);
-
         if (!code || !state) {
-          setError("Thiếu code hoặc state từ Identity Provider.");
-          return;
+          throw new Error("Thiếu authorization code hoặc state.");
         }
 
-        // ----------------------------------------------------
-        // Lấy thông tin đã lưu trước redirect
-        // ----------------------------------------------------
+        //--------------------------------------------------
+        // Restore PKCE
+        //--------------------------------------------------
+
         const pendingRaw = sessionStorage.getItem("app2_pending_auth");
 
         sessionStorage.removeItem("app2_pending_auth");
 
         if (!pendingRaw) {
-          setError(
-            "Không tìm thấy phiên đăng nhập tạm (sessionStorage trống).",
-          );
-          return;
+          throw new Error("Không tìm thấy phiên đăng nhập.");
         }
 
         const pending = JSON.parse(pendingRaw);
 
-        console.log("Pending Auth:", pending);
-
         if (pending.state !== state) {
-          setError("State không khớp - nghi ngờ CSRF.");
-          return;
+          throw new Error("State không hợp lệ.");
         }
 
-        // ----------------------------------------------------
-        // Discovery Document
-        // ----------------------------------------------------
+        //--------------------------------------------------
+        // Discovery
+        //--------------------------------------------------
+
         const discovery = await getDiscovery();
 
-        console.log("========== OIDC DISCOVERY ==========");
-        console.log(discovery);
+        //--------------------------------------------------
+        // Exchange code -> token
+        //--------------------------------------------------
 
-        // ----------------------------------------------------
-        // Đổi Authorization Code lấy Token
-        // ----------------------------------------------------
-        const tokenRes = await fetch(discovery.token_endpoint, {
+        const tokenResponse = await fetch(discovery.token_endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -80,79 +75,47 @@ export default function SsoCallbackPage() {
           body: new URLSearchParams({
             grant_type: "authorization_code",
             code,
-            redirect_uri: OIDC_REDIRECT_URI,
             client_id: OIDC_CLIENT_ID,
+            redirect_uri: OIDC_REDIRECT_URI,
             code_verifier: pending.verifier,
           }),
         });
 
-        if (!tokenRes.ok) {
-          const detail = await tokenRes.text();
-          throw new Error(`Đổi code lấy token thất bại:\n${detail}`);
+        if (!tokenResponse.ok) {
+          throw new Error(await tokenResponse.text());
         }
 
-        const tokenData = await tokenRes.json();
+        const tokens = await tokenResponse.json();
 
         console.log("========== TOKEN RESPONSE ==========");
-        console.log(tokenData);
+        console.log(tokens);
 
-        console.log("Access Token:");
-        console.log(tokenData.access_token);
-
-        console.log("ID Token:");
-        console.log(tokenData.id_token);
-
-        // ----------------------------------------------------
-        // Decode Access Token
-        // ----------------------------------------------------
-        if (tokenData.access_token) {
-          const accessPayload = JSON.parse(
-            atob(tokenData.access_token.split(".")[1]),
-          );
-
-          console.log("========== ACCESS TOKEN ==========");
-          console.log(accessPayload);
-
-          console.log("ACCESS aud =", accessPayload.aud);
-          console.log("ACCESS azp =", accessPayload.azp);
-          console.log("ACCESS iss =", accessPayload.iss);
-          console.log("ACCESS sub =", accessPayload.sub);
+        if (!tokens.id_token) {
+          throw new Error("Identity Provider không trả ID Token.");
         }
 
-        // ----------------------------------------------------
-        // Decode ID Token
-        // ----------------------------------------------------
-        if (tokenData.id_token) {
-          const idPayload = JSON.parse(atob(tokenData.id_token.split(".")[1]));
-
-          console.log("========== ID TOKEN ==========");
-          console.log(idPayload);
-
-          console.log("ID aud =", idPayload.aud);
-          console.log("ID azp =", idPayload.azp);
-          console.log("ID iss =", idPayload.iss);
-          console.log("ID sub =", idPayload.sub);
+        if (!tokens.access_token) {
+          throw new Error("Identity Provider không trả Access Token.");
         }
 
-        // ----------------------------------------------------
-        // Tạm thời gửi Access Token lên Backend
-        // ----------------------------------------------------
-        console.log("========== SEND TOKEN TO BACKEND ==========");
-        console.log("Sending ID Token");
+        console.log("========== ID TOKEN ==========");
+        console.log(decodeJwt(tokens.id_token));
 
-        const exchangeRes = await axios.post(
+        console.log("========== ACCESS TOKEN ==========");
+        console.log(decodeJwt(tokens.access_token));
+
+        const exchange = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/azure/exchange`,
           {
-            azure_access_token: tokenData.id_token,
+            id_token: tokens.id_token,
+            access_token: tokens.access_token,
           },
         );
 
-        console.log("========== BACKEND RESPONSE ==========");
-        console.log(exchangeRes.data);
+        console.log("========== BACKEND ==========");
+        console.log(exchange.data);
 
-        const { access_token, user } = exchangeRes.data;
-
-        login(access_token, user);
+        login(exchange.data.access_token, exchange.data.user);
 
         window.history.replaceState({}, "", OIDC_REDIRECT_URI);
 
@@ -160,22 +123,17 @@ export default function SsoCallbackPage() {
           replace: true,
         });
       } catch (err: any) {
-        console.error("========== SSO ERROR ==========");
         console.error(err);
 
-        if (err.response) {
-          console.error("Response:", err.response.data);
-        }
-
         setError(
-          err.response?.data?.detail?.message ||
-            err.message ||
-            "Đăng nhập SSO thất bại.",
+          err?.response?.data?.detail?.message ??
+            err.message ??
+            "Đăng nhập thất bại.",
         );
       }
     }
 
-    handleCallback();
+    run();
   }, [login, navigate]);
 
   return (
@@ -183,9 +141,9 @@ export default function SsoCallbackPage() {
       sx={{
         minHeight: "100vh",
         display: "flex",
-        flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
+        flexDirection: "column",
         gap: 2,
       }}
     >
@@ -196,7 +154,7 @@ export default function SsoCallbackPage() {
       ) : (
         <>
           <CircularProgress />
-          <Typography>Đang xác thực qua SSO...</Typography>
+          <Typography>Đang xác thực SSO...</Typography>
         </>
       )}
     </Box>
