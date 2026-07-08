@@ -7,11 +7,10 @@ import axios, {
 // 1. Xác định URL Backend dựa trên giá trị từ file .env.development
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const axiosInstance: AxiosInstance = axios.create({
+const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 0, // Thời gian chờ tối đa là 10 giây
+  timeout: 0,
   headers: {
-    "Content-Type": "application/json",
     Accept: "application/json",
   },
 });

@@ -20,7 +20,9 @@ import HistoryLog from "./components/HistoryLog";
 import FaceCompareModal from "../../components/FaceCompareModal";
 import CustomButton from "../../components/CustomButton";
 import axiosInstance from "../../configs/axios";
-import ToastNotification, { type ToastState } from "../../components/ToastNotification";
+import ToastNotification, {
+  type ToastState,
+} from "../../components/ToastNotification";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "");
 
@@ -39,18 +41,24 @@ export default function VehicleInPage() {
   // State quản lý thông báo dùng chung
   const [toast, setToast] = useState<ToastState>({
     open: false,
-    message: '',
-    severity: 'success'
+    message: "",
+    severity: "success",
   });
 
-  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+  const showToast = (
+    message: string,
+    severity: ToastState["severity"] = "success",
+  ) => {
     setToast({ open: true, message, severity });
   };
 
   // 🌟 KHỬ RÒ RỈ BỘ NHỚ RAM (Garbage Collection cho Blob URL)
   useEffect(() => {
     return () => {
-      if (vehicleData?.nationalIdImage && vehicleData.nationalIdImage.startsWith("blob:")) {
+      if (
+        vehicleData?.nationalIdImage &&
+        vehicleData.nationalIdImage.startsWith("blob:")
+      ) {
         URL.revokeObjectURL(vehicleData.nationalIdImage);
       }
     };
@@ -65,7 +73,10 @@ export default function VehicleInPage() {
     if (!file) return;
 
     // Dọn dẹp URL cũ trước khi gán URL mới
-    if (vehicleData?.nationalIdImage && vehicleData.nationalIdImage.startsWith("blob:")) {
+    if (
+      vehicleData?.nationalIdImage &&
+      vehicleData.nationalIdImage.startsWith("blob:")
+    ) {
       URL.revokeObjectURL(vehicleData.nationalIdImage);
     }
 
@@ -84,7 +95,8 @@ export default function VehicleInPage() {
       if (response.data?.status === "SUCCESS") {
         const ocrData = response.data.data;
         const linkedSession = response.data.linked_session;
-        const currentEventUid = linkedSession?.event_uid || response.data.event_uid || "";
+        const currentEventUid =
+          linkedSession?.event_uid || response.data.event_uid || "";
 
         setEventUid(currentEventUid);
         setSessionStatus(linkedSession?.status || "ONLY_PERSON_REGISTERED");
@@ -99,20 +111,27 @@ export default function VehicleInPage() {
           nationalIdImage: imageUrl,
           licensePlate: linkedSession?.expected_plate_number || "CHƯA GẮN XE",
           licensePlateImage: `${API_BASE_URL}/static/media/live_plate.jpg`,
-          driverFaceImage: ocrData?.cccd_face_image_url || "data:image/png;base64,...",
+          driverFaceImage:
+            ocrData?.cccd_face_image_url || "data:image/png;base64,...",
           entryTime: linkedSession?.created_at
             ? new Date(linkedSession.created_at).toLocaleString("vi-VN")
             : new Date().toLocaleString("vi-VN"),
         });
-        
-        showToast("Định danh tài xế và phân tích dữ liệu OCR thành công!", "success");
-        
+
+        showToast(
+          "Định danh tài xế và phân tích dữ liệu OCR thành công!",
+          "success",
+        );
+
         if (currentEventUid) {
           setIsOpenCompareModal(true);
         }
       }
     } catch (error: any) {
-      console.error(">>> [API ERROR OCR VECHILE-IN]:", error.response?.data || error.message);
+      console.error(
+        ">>> [API ERROR OCR VECHILE-IN]:",
+        error.response?.data || error.message,
+      );
       showToast("Thất bại khi kết nối máy chủ xử lý dữ liệu OCR.", "error");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -120,55 +139,127 @@ export default function VehicleInPage() {
     }
   };
 
-  const handlePrintCard = (e: SyntheticEvent) => {
-    e.preventDefault();
-    if (!vehicleData) return;
+  // Thêm state lưu ticket sau khi issue
+  const [ticketData, setTicketData] = useState<{
+    ticket_id: string;
+    front_image_url: string;
+    back_image_url: string;
+    ticket_code: string;
+  } | null>(null);
 
-    // Toàn bộ logic giao diện mẫu in ấn phiếu vật lý
-    const printHtml = `
+  const [isPrinting, setIsPrinting] = useState<boolean>(false);
+
+  const handlePrintCard = async (e: SyntheticEvent) => {
+    e.preventDefault();
+    if (!vehicleData || !eventUid) return;
+
+    try {
+      setIsPrinting(true);
+
+      // Bước 1: Issue vé nếu chưa có
+      let ticket = ticketData;
+      if (!ticket) {
+        const issueForm = new FormData();
+        issueForm.append("event_uid", eventUid);
+        issueForm.append("ticket_type", "VEHICLE_PASS");
+        issueForm.append("issued_by", "guard-001");
+
+        const issueRes = await axiosInstance.post(
+          "/api/v1/tickets/issue",
+          issueForm,
+        );
+        if (issueRes.data?.status !== "SUCCESS") {
+          showToast("Không thể tạo vé, vui lòng thử lại.", "error");
+          return;
+        }
+
+        const issued = issueRes.data.data;
+        ticket = {
+          ticket_id: issued.ticket_id,
+          front_image_url: issued.front_image_url,
+          back_image_url: issued.back_image_url,
+          ticket_code: issued.ticket_code,
+        };
+        setTicketData(ticket);
+      }
+
+      // Bước 2: Gọi API đánh dấu đã in
+      const printForm = new FormData();
+      printForm.append("printer_name", "GUARD_PRINTER");
+      printForm.append("printed_by", "guard-001");
+      await axiosInstance.post(
+        `/api/v1/tickets/${ticket.ticket_id}/print`,
+        printForm,
+      );
+
+      // Bước 3: Mở cửa sổ in với ảnh mặt trước + mặt sau từ server
+      const printHtml = `
       <html>
         <head>
-          <title>PHIẾU XE VÀO CẢNG</title>
+          <title>VÉ XE - ${ticket.ticket_code}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-            .ticket { border: 2px dashed #000; padding: 20px; max-width: 400px; margin: 0 auto; }
-            h2 { margin-top: 0; color: #111; }
-            .info { text-align: left; margin-top: 15px; font-size: 14px; }
+            body {
+              margin: 0;
+              padding: 16px;
+              background: white;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 16px;
+            }
+            img {
+              max-width: 640px;
+              width: 100%;
+              border-radius: 12px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            }
+            @media print {
+              body { padding: 0; gap: 8px; }
+              img { box-shadow: none; page-break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
-          <div class="ticket">
-            <h2>PHIẾU VÀO CỔNG KIỂM SOÁT</h2>
-            <div class="info">
-              <p><b>Biển số xe:</b> ${vehicleData.licensePlate}</p>
-              <p><b>Tài xế:</b> ${vehicleData.driverName}</p>
-              <p><b>Số CCCD:</b> ${vehicleData.nationalId}</p>
-              <p><b>Thời gian vào:</b> ${vehicleData.entryTime}</p>
-            </div>
-          </div>
+          <img src="${ticket.front_image_url}" alt="Mặt trước vé" />
+          <img src="${ticket.back_image_url}" alt="Mặt sau vé" />
+          <script>
+            window.onload = function() {
+              setTimeout(function() { window.print(); window.close(); }, 400);
+            };
+          </script>
         </body>
       </html>
     `;
-    
-    const w = window.open("", "_blank");
-    if (w) {
-      w.document.write(printHtml);
-      w.document.close();
-      setTimeout(() => {
-        w.print();
-        w.close();
-      }, 300);
-    }
 
-    setPrintHistory([
-      `[IN THẺ VÀO] Xe: ${vehicleData.licensePlate} - Tài xế: ${vehicleData.driverName} (${new Date().toLocaleTimeString("vi-VN")})`,
-      ...printHistory,
-    ]);
-    
-    // Reset toàn bộ tiến trình sau khi cấp phát thẻ thành công
-    setVehicleData(null);
-    setEventUid("");
-    setSessionStatus("");
+      const w = window.open("", "_blank");
+      if (w) {
+        w.document.write(printHtml);
+        w.document.close();
+      }
+
+      setPrintHistory([
+        `[IN VÉ] Mã: ${ticket.ticket_code} - Xe: ${vehicleData.licensePlate} - Tài xế: ${vehicleData.driverName} (${new Date().toLocaleTimeString("vi-VN")})`,
+        ...printHistory,
+      ]);
+
+      showToast(`In vé ${ticket.ticket_code} thành công!`, "success");
+
+      // Reset sau khi in xong
+      setTimeout(() => {
+        setVehicleData(null);
+        setEventUid("");
+        setSessionStatus("");
+        setTicketData(null);
+      }, 1000);
+    } catch (error: any) {
+      console.error(
+        ">>> [API ERROR PRINT TICKET]:",
+        error.response?.data || error.message,
+      );
+      showToast("Lỗi khi tạo hoặc in vé, vui lòng thử lại.", "error");
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   return (
@@ -206,21 +297,30 @@ export default function VehicleInPage() {
             <Typography
               variant="h5"
               component="h1"
-              sx={{ color: theme.palette.primary.main, fontWeight: "bold", fontSize: { xs: "1.2rem", sm: "1.5rem" } }}
+              sx={{
+                color: theme.palette.primary.main,
+                fontWeight: "bold",
+                fontSize: { xs: "1.2rem", sm: "1.5rem" },
+              }}
             >
               CỔNG VÀO: ĐỊNH DANH TÀI XẾ
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, ml: 6 }}>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, ml: 6 }}
+          >
             {isLoading && <CircularProgress size={14} />}
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+            <Typography
+              variant="caption"
+              sx={{ color: theme.palette.text.secondary }}
+            >
               {sessionStatus
                 ? `Tiến trình: ${sessionStatus}`
                 : "Hệ thống đang sẵn sàng, chờ quét hoặc tải tệp ảnh CCCD..."}
             </Typography>
           </Box>
         </Box>
-        
+
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <input
             type="file"
@@ -245,26 +345,36 @@ export default function VehicleInPage() {
       {/* KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH */}
       {!vehicleData ? (
         <Box sx={{ textAlign: "center", py: 10 }}>
-          <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
-            Hiện tại chưa có hồ sơ. Vui lòng nhấn nút <b>"Đăng ký người (CCCD)"</b> để tiến hành trích xuất dữ liệu.
+          <Typography
+            variant="body1"
+            sx={{ color: theme.palette.text.secondary }}
+          >
+            Hiện tại chưa có hồ sơ. Vui lòng nhấn nút{" "}
+            <b>"Đăng ký người (CCCD)"</b> để tiến hành trích xuất dữ liệu.
           </Typography>
         </Box>
       ) : (
         <Box>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-            <Box sx={{ flex: { xs: "1 1 100%", lg: "0 0 calc(33.33% - 16px)" } }}>
+            <Box
+              sx={{ flex: { xs: "1 1 100%", lg: "0 0 calc(33.33% - 16px)" } }}
+            >
               <CccdInfo
                 data={vehicleData}
                 onUpdateField={handleUpdateVehicleField}
               />
             </Box>
-            <Box sx={{ flex: { xs: "1 1 100%", lg: "1 1 calc(66.66% - 16px)" } }}>
+            <Box
+              sx={{ flex: { xs: "1 1 100%", lg: "1 1 calc(66.66% - 16px)" } }}
+            >
               <CameraInfo data={vehicleData} />
             </Box>
           </Box>
-          
+
           {/* THANH THAO TÁC XÁC THỰC LỆNH */}
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}
+          >
             <CustomButton
               variant="contained"
               size="large"
@@ -281,7 +391,10 @@ export default function VehicleInPage() {
               color="success"
               startIcon={<PrintIcon />}
               onClick={handlePrintCard}
-              disabled={sessionStatus !== "SUCCESS_MATCH" || isLoading}
+              disabled={
+                sessionStatus !== "SUCCESS_MATCH" || isLoading || isPrinting
+              }
+              isLoading={isPrinting}
             >
               XÁC NHẬN & IN THẺ VÀO
             </CustomButton>
