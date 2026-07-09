@@ -8,6 +8,33 @@ import axios, {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// -----------------------------------------------------------------------
+// Refresh lock liên-tab — tránh nhiều tab cùng gọi /auth/refresh song song
+// khi cùng dùng chung 1 refresh token. Backend đã tự chống race condition
+// (atomic UPDATE), lock này chỉ để giảm số request refresh thừa, không phải
+// điều kiện bắt buộc để đảm bảo đúng.
+// -----------------------------------------------------------------------
+const REFRESH_LOCK_KEY = "refresh_lock_timestamp";
+const REFRESH_LOCK_TTL_MS = 5000;
+
+function tryAcquireRefreshLock(): boolean {
+  const now = Date.now();
+  const existing = localStorage.getItem(REFRESH_LOCK_KEY);
+  if (existing && now - Number(existing) < REFRESH_LOCK_TTL_MS) {
+    return false; // tab khác đang refresh
+  }
+  localStorage.setItem(REFRESH_LOCK_KEY, String(now));
+  return true;
+}
+
+function releaseRefreshLock() {
+  localStorage.removeItem(REFRESH_LOCK_KEY);
+}
+
+// -----------------------------------------------------------------------
+// Axios instance
+// -----------------------------------------------------------------------
+
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 0,
@@ -15,6 +42,10 @@ const axiosInstance: AxiosInstance = axios.create({
     Accept: "application/json",
   },
 });
+
+// -----------------------------------------------------------------------
+// Request interceptor — gắn access token vào mọi request
+// -----------------------------------------------------------------------
 
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -29,6 +60,10 @@ axiosInstance.interceptors.request.use(
   },
   (error) => Promise.reject(error),
 );
+
+// -----------------------------------------------------------------------
+// Response interceptor — tự động refresh khi gặp 401
+// -----------------------------------------------------------------------
 
 let isRefreshing = false;
 
@@ -53,6 +88,7 @@ const forceLogout = () => {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("token");
+  releaseRefreshLock();
   if (!window.location.pathname.includes("/login")) {
     window.location.href = "/login";
   }
@@ -103,7 +139,7 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Đang refresh → đưa vào hàng chờ
+    // Đang refresh trong CÙNG tab → đưa vào hàng chờ nội bộ
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -117,6 +153,19 @@ axiosInstance.interceptors.response.use(
     }
 
     originalRequest._retry = true;
+
+    // Thử lấy lock liên-tab. Nếu tab khác đang refresh, chờ một chút rồi
+    // dùng access token mới nhất mà tab đó vừa lưu, tránh gọi /refresh trùng.
+    if (!tryAcquireRefreshLock()) {
+      await new Promise((r) => setTimeout(r, 500));
+      const latestToken = localStorage.getItem("access_token");
+      if (latestToken) {
+        originalRequest.headers.Authorization = `Bearer ${latestToken}`;
+        return axiosInstance(originalRequest);
+      }
+      // Tab kia refresh không ra kết quả (token vẫn không đổi) → tự thử refresh luôn
+    }
+
     isRefreshing = true;
 
     try {
@@ -125,7 +174,6 @@ axiosInstance.interceptors.response.use(
       if (!refreshToken) {
         // Không có refresh token → trả lỗi về caller hiển thị toast
         // KHÔNG redirect login — có thể user chưa login lần nào hoặc token chưa được lưu
-        isRefreshing = false;
         processQueue(error);
         return Promise.reject(error);
       }
@@ -155,18 +203,13 @@ axiosInstance.interceptors.response.use(
       // Không logout khi lỗi network, timeout, server 500...
       const refreshStatus = refreshError?.response?.status;
       if (refreshStatus === 401 || refreshStatus === 403) {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("token");
-
-        if (!window.location.pathname.includes("/login")) {
-          window.location.href = "/login";
-        }
+        forceLogout();
       }
 
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
+      releaseRefreshLock();
     }
   },
 );

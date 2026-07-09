@@ -11,10 +11,6 @@ import {
 
 import { useAuth } from "../../contexts/AuthContext";
 
-function decodeJwt(token: string) {
-  return JSON.parse(atob(token.split(".")[1]));
-}
-
 export default function SsoCallbackPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -24,11 +20,6 @@ export default function SsoCallbackPage() {
   useEffect(() => {
     async function run() {
       try {
-        console.log("========== SSO CALLBACK ==========");
-
-        //--------------------------------------------------
-        // Authorization Code
-        //--------------------------------------------------
 
         const params = new URLSearchParams(window.location.search);
 
@@ -38,10 +29,6 @@ export default function SsoCallbackPage() {
         if (!code || !state) {
           throw new Error("Thiếu authorization code hoặc state.");
         }
-
-        //--------------------------------------------------
-        // Restore PKCE
-        //--------------------------------------------------
 
         const pendingRaw = sessionStorage.getItem("app2_pending_auth");
 
@@ -57,15 +44,7 @@ export default function SsoCallbackPage() {
           throw new Error("State không hợp lệ.");
         }
 
-        //--------------------------------------------------
-        // Discovery
-        //--------------------------------------------------
-
         const discovery = await getDiscovery();
-
-        //--------------------------------------------------
-        // Exchange code -> token
-        //--------------------------------------------------
 
         const tokenResponse = await fetch(discovery.token_endpoint, {
           method: "POST",
@@ -87,9 +66,6 @@ export default function SsoCallbackPage() {
 
         const tokens = await tokenResponse.json();
 
-        console.log("========== TOKEN RESPONSE ==========");
-        console.log(tokens);
-
         if (!tokens.id_token) {
           throw new Error("Identity Provider không trả ID Token.");
         }
@@ -97,12 +73,6 @@ export default function SsoCallbackPage() {
         if (!tokens.access_token) {
           throw new Error("Identity Provider không trả Access Token.");
         }
-
-        console.log("========== ID TOKEN ==========");
-        console.log(decodeJwt(tokens.id_token));
-
-        console.log("========== ACCESS TOKEN ==========");
-        console.log(decodeJwt(tokens.access_token));
 
         const exchange = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/azure/exchange`,
@@ -112,19 +82,17 @@ export default function SsoCallbackPage() {
           },
         );
 
-        console.log("========== BACKEND ==========");
-        console.log(exchange.data);
+        const { access_token, refresh_token, user } = exchange.data;
 
-        // Lưu lại id_token GỐC của Keycloak (khác internal JWT) — chỉ dùng để
-        // gửi kèm id_token_hint khi logout (RP-Initiated Logout), không dùng
-        // cho việc gọi API nào khác. Đây là dấu hiệu để logout() biết "phiên
-        // này đăng nhập qua SSO, cần đăng xuất cả Keycloak khi user logout".
-        // Dùng localStorage (không phải sessionStorage) để khớp vòng đời với
-        // "token"/"user_info" — nếu không, mở tab mới rồi logout sẽ không
-        // thấy id_token này (sessionStorage chỉ sống trong 1 tab).
+        if (!access_token || !refresh_token) {
+          throw new Error("Backend không trả đủ access_token/refresh_token.");
+        }
+
         localStorage.setItem("sso_id_token", tokens.id_token);
+        // nhân khiến luồng SSO không tự refresh được như luồng dev-login.
+        localStorage.setItem("refresh_token", refresh_token);
 
-        login(exchange.data.access_token, exchange.data.user);
+        login(access_token, user);
 
         window.history.replaceState({}, "", OIDC_REDIRECT_URI);
 
@@ -132,7 +100,7 @@ export default function SsoCallbackPage() {
           replace: true,
         });
       } catch (err: any) {
-        console.error(err);
+        console.error("SSO callback lỗi:", err?.message || err);
 
         setError(
           err?.response?.data?.detail?.message ??
