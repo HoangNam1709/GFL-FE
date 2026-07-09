@@ -62,6 +62,10 @@ export default function LoginPage() {
         const apiUser = response.data.user;
         const apiCamera = response.data.camera;
 
+        if (response.data.refresh_token) {
+          localStorage.setItem("refresh_token", response.data.refresh_token);
+        }
+
         login(response.data.access_token, {
           username: apiUser?.username || apiUser?.email || username,
           role: apiUser?.roles?.[0] || "guard",

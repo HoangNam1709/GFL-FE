@@ -16,7 +16,6 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
-
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const accessToken =
@@ -30,7 +29,6 @@ axiosInstance.interceptors.request.use(
   },
   (error) => Promise.reject(error),
 );
-
 
 let isRefreshing = false;
 
@@ -47,10 +45,18 @@ const processQueue = (error: unknown = null, token: string | null = null) => {
       promise.resolve(token);
     }
   });
-
   failedQueue = [];
 };
 
+// Chỉ gọi hàm này khi chắc chắn cần logout thật sự
+const forceLogout = () => {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("token");
+  if (!window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
+  }
+};
 
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => response,
@@ -65,7 +71,7 @@ axiosInstance.interceptors.response.use(
 
     const status = error.response.status;
 
-    // Không refresh với chính API refresh
+    // Không refresh với chính API refresh hoặc đã retry rồi
     if (
       status !== 401 ||
       originalRequest._retry ||
@@ -75,15 +81,17 @@ axiosInstance.interceptors.response.use(
         case 403:
           console.error("Bạn không có quyền truy cập.");
           break;
-
         case 500:
           console.error("Lỗi máy chủ.");
           break;
-
         case 401:
-          console.error("Token không hợp lệ hoặc đã hết hạn.");
+          // 401 sau khi đã retry → access token thật sự không dùng được
+          // Nếu đây là từ /auth/refresh → logout
+          // Nếu là retry request gốc thất bại → trả lỗi về caller, KHÔNG logout
+          if (originalRequest.url?.includes("/auth/refresh")) {
+            forceLogout();
+          }
           break;
-
         default:
           console.error(
             `API Error (${status})`,
@@ -92,10 +100,10 @@ axiosInstance.interceptors.response.use(
               error.message,
           );
       }
-
       return Promise.reject(error);
     }
 
+    // Đang refresh → đưa vào hàng chờ
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -115,7 +123,11 @@ axiosInstance.interceptors.response.use(
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (!refreshToken) {
-        throw new Error("Refresh token không tồn tại.");
+        // Không có refresh token → trả lỗi về caller hiển thị toast
+        // KHÔNG redirect login — có thể user chưa login lần nào hoặc token chưa được lưu
+        isRefreshing = false;
+        processQueue(error);
+        return Promise.reject(error);
       }
 
       const form = new FormData();
@@ -130,22 +142,27 @@ axiosInstance.interceptors.response.use(
 
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
-
       axiosInstance.defaults.headers.common.Authorization = `Bearer ${access_token}`;
 
       processQueue(null, access_token);
 
       originalRequest.headers.Authorization = `Bearer ${access_token}`;
-
       return axiosInstance(originalRequest);
-    } catch (refreshError) {
+    } catch (refreshError: any) {
       processQueue(refreshError);
 
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("token");
+      // Chỉ logout khi server xác nhận token thật sự không hợp lệ (401/403)
+      // Không logout khi lỗi network, timeout, server 500...
+      const refreshStatus = refreshError?.response?.status;
+      if (refreshStatus === 401 || refreshStatus === 403) {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("token");
 
-      window.location.href = "/login";
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
+        }
+      }
 
       return Promise.reject(refreshError);
     } finally {
