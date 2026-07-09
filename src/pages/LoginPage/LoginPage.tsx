@@ -59,6 +59,7 @@ export default function LoginPage() {
       );
 
       if (response.data?.access_token) {
+        localStorage.setItem("access_token", response.data.access_token);
         const apiUser = response.data.user;
         const apiCamera = response.data.camera;
 

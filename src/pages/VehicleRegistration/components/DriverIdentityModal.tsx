@@ -18,7 +18,7 @@ import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import CancelIcon from "@mui/icons-material/Cancel";
-import axios from "axios";
+import axiosInstance from "../../../configs/axios";
 import type { XitecLog } from "../../../types/vehicle";
 import type { ToastState } from "../../../components/ToastNotification";
 import ToastNotification from "../../../components/ToastNotification";
@@ -54,11 +54,14 @@ export default function DriverIdentityModal({
   // Khởi tạo state thông báo hệ thống thông minh
   const [toast, setToast] = useState<ToastState>({
     open: false,
-    message: '',
-    severity: 'success'
+    message: "",
+    severity: "success",
   });
 
-  const showToast = (message: string, severity: ToastState['severity'] = 'success') => {
+  const showToast = (
+    message: string,
+    severity: ToastState["severity"] = "success",
+  ) => {
     setToast({ open: true, message, severity });
   };
 
@@ -97,7 +100,7 @@ export default function DriverIdentityModal({
       if (eventId) ocrFormData.append("event_uid", eventId);
       ocrFormData.append("plate_number", licensePlate);
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/ocr/cccd`,
         ocrFormData,
         {
@@ -120,31 +123,45 @@ export default function DriverIdentityModal({
           nationalId: ocrData?.id || "",
           driverName: ocrData?.name || "Không rõ",
           nationalIdImage: ocrData?.cccd_image_url || cccdPreview,
-          licensePlate: licensePlate || linkedSession?.expected_plate_number || "ĐÃ GẮN XE",
+          licensePlate:
+            licensePlate || linkedSession?.expected_plate_number || "ĐÃ GẮN XE",
           licensePlateImage: `${API_BASE_URL}/static/media/live_plate.jpg`,
-          driverFaceImage: ocrData?.cccd_face_image_url || "data:image/png;base64,...",
+          driverFaceImage:
+            ocrData?.cccd_face_image_url || "data:image/png;base64,...",
           entryTime: linkedSession?.created_at
             ? new Date(linkedSession.created_at).toLocaleString("vi-VN")
             : new Date().toLocaleString("vi-VN"),
         };
 
-        showToast("Liên kết định danh sinh trắc CCCD và thông tin xe thành công!", "success");
-        
+        showToast(
+          "Liên kết định danh sinh trắc CCCD và thông tin xe thành công!",
+          "success",
+        );
+
         // Trì hoãn đóng modal một chút để người dùng kịp nhìn thấy Toast thành công
         setTimeout(() => {
-          onOcrSuccess(updatedVehicleData, linkedSession?.status || "READY_TO_COMPARE");
+          onOcrSuccess(
+            updatedVehicleData,
+            linkedSession?.status || "READY_TO_COMPARE",
+          );
           onClose();
         }, 800);
-
       } else {
-        showToast(response.data?.message || "Không thể trích xuất dữ liệu OCR CCCD.", "error");
+        showToast(
+          response.data?.message || "Không thể trích xuất dữ liệu OCR CCCD.",
+          "error",
+        );
       }
     } catch (err: any) {
-      console.error(">>> [DEBUG LỖI OCR CCCD]:", err.response?.data || err.message);
-      const serverMsg = err.response?.data?.detail?.message || err.response?.data?.detail;
+      console.error(
+        ">>> [DEBUG LỖI OCR CCCD]:",
+        err.response?.data || err.message,
+      );
+      const serverMsg =
+        err.response?.data?.detail?.message || err.response?.data?.detail;
       showToast(
         `Thất bại khi kết nối máy chủ sinh trắc OCR: ${typeof serverMsg === "string" ? serverMsg : "Lỗi hệ thống"}`,
-        "error"
+        "error",
       );
     } finally {
       setPersonLoading(false);
@@ -152,10 +169,10 @@ export default function DriverIdentityModal({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={personLoading ? undefined : onClose} // Chặn tắt modal khi đang xử lý
-      fullWidth 
+      fullWidth
       maxWidth="sm"
     >
       <DialogTitle
@@ -177,7 +194,7 @@ export default function DriverIdentityModal({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent
         dividers
         sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5 }}
@@ -204,9 +221,18 @@ export default function DriverIdentityModal({
             },
           }}
         />
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <Box
-            onClick={() => !cccdPreview && !personLoading && cccdInputRef.current?.click()}
+            onClick={() =>
+              !cccdPreview && !personLoading && cccdInputRef.current?.click()
+            }
             sx={{
               width: "100%",
               height: "140px",
@@ -247,7 +273,7 @@ export default function DriverIdentityModal({
                       right: 4,
                       bgcolor: "rgba(0, 0, 0, 0.6)",
                       color: theme.palette.common.white,
-                      "&:hover": { bgcolor: "rgba(0, 0, 0, 0.8)" }
+                      "&:hover": { bgcolor: "rgba(0, 0, 0, 0.8)" },
                     }}
                   >
                     <CancelIcon />
@@ -255,9 +281,18 @@ export default function DriverIdentityModal({
                 )}
               </>
             ) : (
-              <Box sx={{ textAlign: "center", opacity: personLoading ? 0.5 : 1 }}>
+              <Box
+                sx={{ textAlign: "center", opacity: personLoading ? 0.5 : 1 }}
+              >
                 <AddAPhotoIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: theme.palette.text.secondary }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mt: 0.5,
+                    color: theme.palette.text.secondary,
+                  }}
+                >
                   Tải ảnh chụp CCCD
                 </Typography>
               </Box>
@@ -275,7 +310,12 @@ export default function DriverIdentityModal({
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="outlined" color="inherit" disabled={personLoading}>
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          color="inherit"
+          disabled={personLoading}
+        >
           Hủy
         </Button>
         <Button

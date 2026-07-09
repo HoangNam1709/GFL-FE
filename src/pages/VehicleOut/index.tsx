@@ -23,7 +23,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
-import axios from "axios";
+import axiosInstance from "../../configs/axios";
 import { useNavigate } from "react-router-dom";
 
 import CccdInfo from "../VehicleIn/components/CccdInfo";
@@ -97,7 +97,7 @@ export default function VehicleOutPage() {
       }
       params.append("note", "Checkout qua ứng dụng Frontend");
 
-      const response = await axios.post(API_CHECKOUT_URL, params, {
+      const response = await axiosInstance.post(API_CHECKOUT_URL, params, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           Authorization: `Bearer ${userToken}`,
