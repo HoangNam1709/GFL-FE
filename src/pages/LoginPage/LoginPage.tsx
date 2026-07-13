@@ -23,8 +23,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   generatePkcePair,
   getDiscovery,
-  OIDC_CLIENT_ID,
+  getProviderConfig,
   OIDC_REDIRECT_URI,
+  type OidcProvider,
 } from "../../configs/oidcPkce";
 
 export default function LoginPage() {
@@ -92,26 +93,24 @@ export default function LoginPage() {
     }
   };
 
-  const handleSsoLogin = async () => {
+  const handleSsoLogin = async (provider: OidcProvider) => {
     try {
       setError(null);
       setLoading(true);
 
-      const discovery = await getDiscovery();
+      const discovery = await getDiscovery(provider);
+      const { clientId } = getProviderConfig(provider);
       const { verifier, challenge } = await generatePkcePair();
       const state = crypto.randomUUID();
       const nonce = crypto.randomUUID();
 
-      // sessionStorage: chỉ sống trong 1 tab, đủ cho vòng đời redirect này —
-      // lý do y hệt bạn đã học ở App 1 (server-side session ở đó, giờ là
-      // sessionStorage vì không có Backend đứng giữa giữ hộ).
       sessionStorage.setItem(
         "app2_pending_auth",
-        JSON.stringify({ state, nonce, verifier }),
+        JSON.stringify({ provider, state, nonce, verifier }),
       );
 
       const params = new URLSearchParams({
-        client_id: OIDC_CLIENT_ID,
+        client_id: clientId,
         response_type: "code",
         scope: "openid profile email",
         redirect_uri: OIDC_REDIRECT_URI,
@@ -276,7 +275,29 @@ export default function LoginPage() {
               fullWidth
               variant="outlined"
               disabled={loading}
-              onClick={handleSsoLogin}
+              onClick={() => handleSsoLogin("keycloak")}
+              sx={{
+                height: 48,
+                borderRadius: 2,
+                color: "#fff",
+                borderColor: "rgba(255,255,255,0.4)",
+                textTransform: "none",
+                fontWeight: 600,
+                mb: 1.5,
+                "&:hover": {
+                  borderColor: "#fff",
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                },
+              }}
+            >
+              Đăng nhập qua Keycloak
+            </Button>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              disabled={loading}
+              onClick={() => handleSsoLogin("azure")}
               sx={{
                 height: 48,
                 borderRadius: 2,

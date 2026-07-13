@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(
-    localStorage.getItem("access_token"),
+    localStorage.getItem("access_token") || localStorage.getItem("token"),
   );
   const [user, setUser] = useState<UserInfo | null>(() => {
     const savedUser = localStorage.getItem("user_info");
@@ -55,9 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user_info");
 
     // 5. Xóa id_token gốc của Keycloak (nếu đăng nhập qua SSO) — chỉ dọn state
-    // cục bộ ở đây. Việc đăng xuất KHỎI KEYCLOAK (RP-Initiated Logout) được
-    // thực hiện riêng ở nơi gọi logout() (xem Sidebar.tsx: performFullLogout),
-    // vì cần đọc giá trị này TRƯỚC khi xóa để redirect đúng.
     localStorage.removeItem("sso_id_token");
 
     // 6. Cập nhật State về null để ép React re-render, bảo vệ Private Route ngay lập tức

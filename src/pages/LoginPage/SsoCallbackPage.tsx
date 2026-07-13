@@ -5,8 +5,9 @@ import axios from "axios";
 
 import {
   getDiscovery,
-  OIDC_CLIENT_ID,
+  getProviderConfig,
   OIDC_REDIRECT_URI,
+  type OidcProvider,
 } from "../../configs/oidcPkce";
 
 import { useAuth } from "../../contexts/AuthContext";
@@ -20,7 +21,6 @@ export default function SsoCallbackPage() {
   useEffect(() => {
     async function run() {
       try {
-
         const params = new URLSearchParams(window.location.search);
 
         const code = params.get("code");
@@ -31,7 +31,6 @@ export default function SsoCallbackPage() {
         }
 
         const pendingRaw = sessionStorage.getItem("app2_pending_auth");
-
         sessionStorage.removeItem("app2_pending_auth");
 
         if (!pendingRaw) {
@@ -44,7 +43,13 @@ export default function SsoCallbackPage() {
           throw new Error("State không hợp lệ.");
         }
 
-        const discovery = await getDiscovery();
+        const provider = pending.provider as OidcProvider;
+        if (!provider) {
+          throw new Error("Không xác định được provider đã dùng để đăng nhập.");
+        }
+
+        const discovery = await getDiscovery(provider);
+        const { clientId } = getProviderConfig(provider);
 
         const tokenResponse = await fetch(discovery.token_endpoint, {
           method: "POST",
@@ -54,7 +59,7 @@ export default function SsoCallbackPage() {
           body: new URLSearchParams({
             grant_type: "authorization_code",
             code,
-            client_id: OIDC_CLIENT_ID,
+            client_id: clientId,
             redirect_uri: OIDC_REDIRECT_URI,
             code_verifier: pending.verifier,
           }),
@@ -77,6 +82,7 @@ export default function SsoCallbackPage() {
         const exchange = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/azure/exchange`,
           {
+            provider,
             id_token: tokens.id_token,
             access_token: tokens.access_token,
           },
@@ -89,7 +95,10 @@ export default function SsoCallbackPage() {
         }
 
         localStorage.setItem("sso_id_token", tokens.id_token);
-        // nhân khiến luồng SSO không tự refresh được như luồng dev-login.
+        // Lưu lại provider đã dùng — Sidebar.tsx (logout) cần biết để gọi
+        // đúng discovery/end_session_endpoint, không thể mặc định luôn là
+        // Keycloak như trước.
+        localStorage.setItem("sso_provider", provider);
         localStorage.setItem("refresh_token", refresh_token);
 
         login(access_token, user);

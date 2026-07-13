@@ -25,7 +25,8 @@ import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import GppGoodIcon from "@mui/icons-material/GppGood";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../contexts/AuthContext";
-import { getDiscovery } from "../configs/oidcPkce";
+import axiosInstance from "../configs/axios";
+import { getDiscovery, type OidcProvider } from "../configs/oidcPkce";
 
 interface SidebarProps {
   open: boolean;
@@ -44,26 +45,49 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = async () => {
-    // Đọc TRƯỚC khi gọi logout() — vì logout() sẽ xóa key này khỏi localStorage.
-    // Có giá trị này = phiên đăng nhập qua SSO (Keycloak), không có = dev-login.
+    // Đọc TRƯỚC khi xóa — localStorage.clear()/logout() sẽ xóa các key này.
     const ssoIdToken = localStorage.getItem("sso_id_token");
+    const ssoProvider = localStorage.getItem(
+      "sso_provider",
+    ) as OidcProvider | null;
+    const refreshToken = localStorage.getItem("refresh_token");
+
+    // Thu hồi refresh token ở Backend TRƯỚC khi xóa local — nếu không, ai có
+    // được refresh token cũ (vd máy dùng chung ở chốt gác) vẫn xin được
+    // access token mới cho tới khi tự hết hạn, dù đã bấm "Đăng xuất".
+    if (refreshToken) {
+      try {
+        const formData = new URLSearchParams();
+        if (ssoProvider) formData.set("provider", ssoProvider);
+        formData.set("refresh_token", refreshToken);
+
+        // Dùng axiosInstance (không phải axios thô) để tự động gắn đúng
+        // Authorization header theo cùng logic đang áp dụng cho mọi API khác.
+        await axiosInstance.post("/api/v1/auth/logout", formData, {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+      } catch (err) {
+        console.error("Thu hồi refresh token thất bại:", err);
+        // Không chặn logout cục bộ dù thu hồi thất bại — ưu tiên không để
+        // user bị kẹt lại trong app.
+      }
+    }
 
     localStorage.clear();
     logout();
 
-    if (!ssoIdToken) {
-      // Đăng nhập bằng dev-login (username/password nội bộ) — không có
-      // session Keycloak nào để đăng xuất, giữ nguyên hành vi cũ.
+    if (!ssoIdToken || !ssoProvider) {
+      // Đăng nhập bằng dev-login — không có session IdP nào để đăng xuất,
+      // giữ nguyên hành vi cũ.
       navigate("/login");
       return;
     }
 
-    // Đăng nhập qua SSO — cần đăng xuất cả session Keycloak (RP-Initiated
-    // Logout), nếu không, bấm "Đăng nhập SSO" lần sau sẽ tự động đăng nhập
-    // lại mà không hỏi mật khẩu (session Keycloak vẫn còn sống trên trình
-    // duyệt), gây hiểu lầm là "logout không có tác dụng".
+    // Đăng nhập qua SSO — cần đăng xuất cả session IdP (RP-Initiated
+    // Logout), nếu không, đăng nhập SSO lần sau sẽ tự động đăng nhập lại mà
+    // không hỏi mật khẩu (session IdP vẫn còn sống trên trình duyệt).
     try {
-      const discovery = await getDiscovery();
+      const discovery = await getDiscovery(ssoProvider);
       const params = new URLSearchParams({
         id_token_hint: ssoIdToken,
         post_logout_redirect_uri: `${window.location.origin}/login`,
@@ -71,12 +95,10 @@ export default function Sidebar({ open, drawerWidth }: SidebarProps) {
 
       if (discovery.end_session_endpoint) {
         window.location.href = `${discovery.end_session_endpoint}?${params.toString()}`;
-        return; // dừng ở đây — trình duyệt sẽ điều hướng sang Keycloak rồi quay lại /login
+        return;
       }
     } catch (err) {
-      console.error("Không đăng xuất được khỏi Keycloak:", err);
-      // Không chặn user lại — vẫn cho về /login dù đăng xuất IdP thất bại,
-      // để tránh user bị kẹt không thoát ra được màn hình hiện tại.
+      console.error("Không đăng xuất được khỏi Identity Provider:", err);
     }
 
     navigate("/login");
